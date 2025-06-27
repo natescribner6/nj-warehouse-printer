@@ -457,25 +457,27 @@
 }
 
 #scannerContainer {
-    position: fixed;
+    position: absolute; /* not fixed, since it's already inside your overlay */
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.9);
-    z-index: 9999;
+    background-color: black;
+    z-index: 1; /* let the reticle and UI be on top */
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    overflow: hidden;
 }
 
-#scannerContainer video {
-    max-width: 90%;
-    max-height: 60%;
-    border: 2px solid #007bff;
-    border-radius: 10px;
+
+#scannerContainer video,
+#scannerContainer canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    border: none;
+    border-radius: 0;
 }
 
     </style>
@@ -1105,7 +1107,8 @@ function startLiveBarcodeScanner() {
     const scannerOverlay = createScannerOverlay();
     document.body.appendChild(scannerOverlay);
 
-    const video = scannerOverlay.querySelector('#scannerVideo');
+    const scannerContainer = scannerOverlay.querySelector('#scannerContainer');
+
 
     Quagga.init({
         inputStream: {
@@ -1115,7 +1118,7 @@ function startLiveBarcodeScanner() {
                 width: { ideal: 1920 },
                 height: { ideal: 1080 }
             },
-            target: video
+            target: scannerContainer
         },
         decoder: {
             readers: ["code_128_reader", "code_39_reader", "itf_reader"]
@@ -1166,7 +1169,8 @@ function createScannerOverlay() {
             
             <!-- Camera View -->
             <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center;">
-                <video id="scannerVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <div id="scannerContainer" style="width: 100%; height: 100%; position: relative;"></div>
+
                 
                 <!-- Scanning Reticle -->
                 <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 100px; border: 2px solid #00ff00; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"></div>
