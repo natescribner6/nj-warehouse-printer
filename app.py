@@ -1290,5 +1290,5 @@ def sign_pdf():
 if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    app.run(host="0.0.0.0", port=5000, debug=True)
-  #  app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)
+    #app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)
