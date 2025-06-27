@@ -575,7 +575,7 @@
             <button class="category-btn active" data-category="all">All</button>
         </div>
         
-        <a href="/admin" class="admin-link">⚙️ Admin</a>
+        <a href="ops/admin" class="admin-link">⚙️ Admin</a>
     </div>
     
     <!-- Shipping Label Mode -->
@@ -953,7 +953,7 @@ function switchMode(mode) {
                 noProducts.style.display = 'none';
             }
             
-            grid.innerHTML = products.map(product => `
+grid.innerHTML = products.map(product => `
                 <div class="product-card">
                     <div class="status-indicator" title="Ready to print"></div>
                     <div class="product-image ${product.image ? '' : 'no-image'}">
@@ -967,6 +967,17 @@ function switchMode(mode) {
                         <p>${product.description || 'No description available'}</p>
                         <div class="product-meta">
                             <span class="category-tag">${product.category}</span>
+                            <span class="printer-tag" title="Printer: ${
+                                product.printer_id === '74471601' ? 'Epson' :
+                                product.printer_id === '74471602' ? 'Zebra' :
+                                'Unknown'
+                            }">
+                                🖨️ ${
+                                    product.printer_id === 74471601 ? 'Epson' :
+                                    product.printer_id === 74471602 ? 'Zebra' :
+                                    'Unknown'
+                                }
+                            </span>
                             ${product.paper_size ? 
                                 `<span class="paper-tag" title="Paper Size: ${product.paper_size}">📄 ${product.paper_size}</span>` : 
                                 '<span class="paper-tag default" title="Uses printer default paper size">📄 Default</span>'
