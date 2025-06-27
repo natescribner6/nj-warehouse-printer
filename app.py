@@ -223,6 +223,7 @@ def batch_interface():
 
 @app.route('/ops')
 def ops_login():
+    print('loading login')
     """Login page for warehouse ops"""
     if check_auth():
         return redirect('/ops/warehouse')
