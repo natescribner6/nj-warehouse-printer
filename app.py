@@ -4,7 +4,7 @@ import base64
 import os
 import json
 import uuid
-import fitz  # PyMuPDF for PDF processing
+from pdf2image import convert_from_path
 from PIL import Image
 import io
 import time
@@ -145,28 +145,21 @@ def save_print_config(config):
 def generate_pdf_thumbnail(pdf_path, output_path):
     """Generate a thumbnail image from the first page of a PDF"""
     try:
-        # Open the PDF
-        pdf_document = fitz.open(pdf_path)
+        # Convert first page of PDF to image
+        pages = convert_from_path(pdf_path, first_page=1, last_page=1, dpi=150)
         
-        # Get the first page
-        first_page = pdf_document[0]
-        
-        # Render page to an image (matrix for scaling)
-        mat = fitz.Matrix(2, 2)  # 2x zoom for better quality
-        pix = first_page.get_pixmap(matrix=mat)
-        
-        # Convert to PIL Image
-        img_data = pix.tobytes("png")
-        image = Image.open(io.BytesIO(img_data))
-        
-        # Resize to thumbnail size (300x300 max, maintain aspect ratio)
-        image.thumbnail((300, 300), Image.Resampling.LANCZOS)
-        
-        # Save as JPG
-        image.save(output_path, "JPEG", quality=85)
-        
-        pdf_document.close()
-        return True
+        if pages:
+            # Get the first page
+            first_page = pages[0]
+            
+            # Resize to thumbnail size (300x300 max, maintain aspect ratio)
+            first_page.thumbnail((300, 300), Image.Resampling.LANCZOS)
+            
+            # Save as JPG
+            first_page.save(output_path, "JPEG", quality=85)
+            return True
+        else:
+            return False
         
     except Exception as e:
         print(f"Error generating thumbnail: {e}")
