@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template, url_for, send_from_directory
+from flask import Flask, jsonify, request, render_template, url_for, send_from_directory, session, redirect
 import requests
 import base64
 import os
@@ -8,13 +8,19 @@ from pdf2image import convert_from_path
 from PIL import Image
 import io
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
+
+app.permanent_session_lifetime = timedelta(days=7)
+
+
 
 # Configuration variables from environment
 PRINTNODE_API_KEY = os.getenv('PRINTNODE_API_KEY')
@@ -58,6 +64,16 @@ for folder in [UPLOAD_FOLDER, STATIC_FOLDER, IMAGES_FOLDER, PDF_FOLDER]:
         os.makedirs(folder)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+
+
+def authenticate():
+    password = request.form.get('password')
+    if password == os.getenv('WAREHOUSE_PASSWORD', 'warehouse123'):
+        session['authenticated'] = True
+        session.permanent = True  # This line makes it persistent
+        return redirect('/ops/warehouse')
+    return redirect('/ops?error=1')
+
 
 def load_print_config():
     """Load print configuration from JSON file"""
@@ -178,17 +194,70 @@ def build_print_options(product, quantity):
     
     return options
 
-# Main warehouse interface
-@app.route('/')
+def check_auth():
+    return session.get('authenticated', False)
+
+@app.route('/ops/auth', methods=['POST'])
+def authenticate():
+    password = request.form.get('password')
+    if password == os.getenv('WAREHOUSE_PASSWORD', 'warehouse123'):  # Set this in your .env
+        session['authenticated'] = True
+        return redirect('/ops/warehouse')
+    return redirect('/ops?error=1')
+
+# Modify your existing warehouse route
+@app.route('/ops/warehouse')
 def warehouse_interface():
-    """Main warehouse printing interface"""
+    """Protected warehouse printing interface"""
+    if not check_auth():
+        return redirect('/ops')
     return render_template('warehouse.html')
 
-# Batch printing interface
-@app.route('/batch')
+# Also protect your batch route
+@app.route('/ops/batch')
 def batch_interface():
-    """Batch printing interface"""
+    """Protected batch printing interface"""
+    if not check_auth():
+        return redirect('/ops')
     return render_template('batch.html')
+
+@app.route('/ops')
+def ops_login():
+    """Login page for warehouse ops"""
+    if check_auth():
+        return redirect('/ops/warehouse')
+    
+    return '''
+    <html>
+    <head><title>Warehouse Login</title></head>
+    <body style="font-family: Arial; text-align: center; padding: 50px;">
+        <h2>Warehouse Operations</h2>
+        <form method="post" action="/ops/auth">
+            <input type="password" name="password" placeholder="Access Code" required>
+            <br><br>
+            <button type="submit">Access</button>
+        </form>
+    </body>
+    </html>
+    '''
+
+@app.route('/ops/logout')
+def logout():
+    session.pop('authenticated', None)
+    return redirect('/ops')
+
+@app.route('/')
+def home():
+    """Public landing page"""
+    return '''
+    <html>
+    <head><title>Nate's Site</title></head>
+    <body style="font-family: Arial; text-align: center; padding: 50px;">
+        <h1>Welcome to Nate's Site</h1>
+        <p>Professional website coming soon...</p>
+    </body>
+    </html>
+    '''
 
 # API endpoint to get all products
 @app.route('/api/products')
@@ -789,9 +858,11 @@ def serve_pdf(filename):
     return send_from_directory(PDF_FOLDER, filename)
 
 # Configuration management endpoints
-@app.route('/admin')
+@app.route('/ops/admin')
 def admin_interface():
-    """Admin interface for managing products"""
+    """Protected admin interface for managing products"""
+    if not check_auth():
+        return redirect('/ops')
     return render_template('admin.html')
 
 @app.route('/api/products', methods=['POST'])
