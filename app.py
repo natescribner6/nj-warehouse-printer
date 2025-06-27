@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template, url_for, send_from_directory, session, redirect, send_file
+from flask import Flask, jsonify, request, render_template, url_for, send_from_directory, session, redirect, send_file, abort
 import requests
 import base64
 import os
@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from reportlab.pdfgen import canvas
 from pypdf import PdfReader, PdfWriter, Transformation
+import hashlib
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -66,6 +68,80 @@ for folder in [UPLOAD_FOLDER, STATIC_FOLDER, IMAGES_FOLDER, PDF_FOLDER]:
         os.makedirs(folder)
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+
+
+def get_device_fingerprint():
+    """Create a device fingerprint from browser characteristics"""
+    user_agent = request.headers.get('User-Agent', '')
+    accept_language = request.headers.get('Accept-Language', '')
+    accept_encoding = request.headers.get('Accept-Encoding', '')
+    
+    # Combine multiple headers for better uniqueness
+    fingerprint_data = f"{user_agent}|{accept_language}|{accept_encoding}"
+    fingerprint = hashlib.md5(fingerprint_data.encode()).hexdigest()
+    
+    # Console log for debugging (you'll see this in your server logs)
+    print(f"Device Fingerprint: {fingerprint}")
+    print(f"User-Agent: {user_agent}")
+    
+    return fingerprint
+
+def is_whitelisted_device():
+    """Check if current device is in the whitelist"""
+    device_id = get_device_fingerprint()
+    
+    whitelisted_devices = [
+        "324503b48f1da98c2c0d19cb3f41364e"
+        # Add your device fingerprints here after seeing them in logs
+        # 'abc123def456789...',  # Nate's iPhone
+        # 'xyz789abc123456...',  # Nate's laptop
+    ]
+    
+    return device_id in whitelisted_devices
+
+
+def is_authorized():
+    """Check if request is authorized via device fingerprint or city location"""
+    try:
+        # Step 1: Check device fingerprint whitelist
+        if is_whitelisted_device():
+            print(f"✅ Authorized device: {get_device_fingerprint()}")
+            return True
+        
+        # Step 2: Check if in correct city (zip 08094)
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ',' in ip:
+            ip = ip.split(',')[0].strip()
+        
+        # Skip local/private IPs during development
+        if ip in ['127.0.0.1', 'localhost'] or ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
+            print("✅ Local/private IP - allowing access")
+            return True
+            
+        # Use geolocation API to check city/zip
+        response = requests.get(f'http://ip-api.com/json/{ip}', timeout=3)
+        data = response.json()
+        
+        city = data.get('city', '').lower()
+        zip_code = data.get('zip', '')
+        region = data.get('region', '')
+        
+        print(f"🌍 Location check - City: {city}, Zip: {zip_code}, State: {region}")
+        
+        # Check for your specific area (08094 is Glassboro, NJ)
+        if (zip_code == '08094' or 
+            city in ['glassboro', 'sewell', 'washington township'] or
+            (region == 'New Jersey' and city in ['glassboro'])):
+            print("✅ Authorized by location")
+            return True
+        
+        print(f"❌ Location not authorized - IP: {ip}")
+        return False
+        
+    except Exception as e:
+        print(f"⚠️ Auth check error: {e} - allowing access")
+        # On error, allow access (fail open)
+        return True
 
 
 def authenticate():
@@ -201,45 +277,128 @@ def check_auth():
 
 @app.route('/ops/auth', methods=['POST'])
 def authenticate():
+    if not is_authorized():
+        abort(403)
+        
     password = request.form.get('password')
-    if password == os.getenv('WAREHOUSE_PASSWORD', 'warehouse123'):  # Set this in your .env
+    if password == os.getenv('WAREHOUSE_PASSWORD', 'warehouse123'):
         session['authenticated'] = True
         return redirect('/ops/warehouse')
     return redirect('/ops?error=1')
 
-# Modify your existing warehouse route
 @app.route('/ops/warehouse')
 def warehouse_interface():
     """Protected warehouse printing interface"""
+    if not is_authorized():
+        abort(403)
     if not check_auth():
         return redirect('/ops')
     return render_template('warehouse.html')
 
-# Also protect your batch route
 @app.route('/ops/batch')
 def batch_interface():
     """Protected batch printing interface"""
+    if not is_authorized():
+        abort(403)
     if not check_auth():
         return redirect('/ops')
     return render_template('batch.html')
 
 @app.route('/ops')
 def ops_login():
+    if not is_authorized():
+        abort(403)
+        
     print('loading login')
     """Login page for warehouse ops"""
+    
+    # If whitelisted device, skip password and go straight to warehouse
+    if is_whitelisted_device():
+        session['authenticated'] = True
+        return redirect('/ops/warehouse')
+    
+    # Otherwise, check if already authenticated
     if check_auth():
         return redirect('/ops/warehouse')
     
-    return '''
+    error_msg = '❌ Invalid access code' if request.args.get('error') else ''
+    
+    return f'''
     <html>
-    <head><title>Warehouse Login</title></head>
-    <body style="font-family: Arial; text-align: center; padding: 50px;">
-        <h2>Warehouse Operations</h2>
-        <form method="post" action="/ops/auth">
-            <input type="password" name="password" placeholder="Access Code" required>
-            <br><br>
-            <button type="submit">Access</button>
-        </form>
+    <head>
+        <title>Warehouse Login</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0; padding: 0; height: 100vh;
+                display: flex; align-items: center; justify-content: center;
+            }}
+            .container {{
+                background: white; padding: 40px; border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                text-align: center; min-width: 300px;
+            }}
+            h2 {{ color: #333; margin-bottom: 30px; }}
+            input {{
+                width: 100%; padding: 12px; border: 2px solid #e1e5e9;
+                border-radius: 8px; font-size: 16px; margin-bottom: 20px;
+                box-sizing: border-box;
+            }}
+            input:focus {{
+                outline: none; border-color: #667eea;
+            }}
+            button {{
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; border: none; padding: 12px 30px;
+                border-radius: 8px; font-size: 16px; cursor: pointer;
+                width: 100%; transition: transform 0.2s;
+            }}
+            button:hover {{ transform: translateY(-2px); }}
+            .error {{ color: #e74c3c; margin-bottom: 15px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>🏭 Warehouse Operations</h2>
+            {f'<div class="error">{error_msg}</div>' if error_msg else ''}
+            <form method="post" action="/ops/auth">
+                <input type="password" name="password" placeholder="Enter Access Code" required>
+                <button type="submit">Access System</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    '''
+
+# Debug route to see device fingerprint and location
+@app.route('/ops/debug')
+def debug_info():
+    """Debug route to see device fingerprint and location info"""
+    device_id = get_device_fingerprint()
+    
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if ',' in ip:
+        ip = ip.split(',')[0].strip()
+    
+    try:
+        response = requests.get(f'http://ip-api.com/json/{ip}', timeout=3)
+        location_data = response.json()
+    except:
+        location_data = {"error": "Could not fetch location"}
+    
+    return f'''
+    <html>
+    <body style="font-family: Arial; padding: 20px;">
+        <h2>Debug Info</h2>
+        <p><strong>Device Fingerprint:</strong> <code>{device_id}</code></p>
+        <p><strong>Your IP:</strong> {ip}</p>
+        <p><strong>Location Data:</strong></p>
+        <pre>{location_data}</pre>
+        <hr>
+        <p>Copy your device fingerprint and add it to the whitelist!</p>
+        <a href="/ops">← Back to Ops</a>
     </body>
     </html>
     '''
@@ -254,10 +413,49 @@ def home():
     """Public landing page"""
     return '''
     <html>
-    <head><title>Nate's Site</title></head>
-    <body style="font-family: Arial; text-align: center; padding: 50px;">
-        <h1>Welcome to Nate's Site</h1>
-        <p>Professional website coming soon...</p>
+    <head>
+        <title>Nate's Site</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                margin: 0; padding: 0; height: 100vh;
+                display: flex; align-items: center; justify-content: center;
+                color: white;
+            }
+            .container {
+                text-align: center; max-width: 500px; padding: 40px;
+            }
+            h1 {
+                font-size: 3em; margin-bottom: 20px;
+                background: linear-gradient(45deg, #fff, #a8edea);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            p { font-size: 1.2em; margin-bottom: 40px; opacity: 0.9; }
+            .go-btn {
+                display: inline-block;
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+                color: white; text-decoration: none;
+                padding: 15px 40px; border-radius: 50px;
+                font-size: 18px; font-weight: 600;
+                transition: all 0.3s ease;
+                box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            }
+            .go-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 15px 40px rgba(255, 107, 107, 0.4);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Nate's Site</h1>
+            <p>Professional website coming soon...</p>
+            <a href="/ops" class="go-btn">GO →</a>
+        </div>
     </body>
     </html>
     '''
@@ -1092,5 +1290,5 @@ def sign_pdf():
 if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    
-    app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)
+    app.run(host="0.0.0.0", port=5000, debug=True)
+  #  app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)
