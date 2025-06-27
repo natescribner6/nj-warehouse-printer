@@ -479,6 +479,8 @@
 }
 
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+
 </head>
 <body>
     <div class="header">
@@ -1090,61 +1092,65 @@ function scanBarcode() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         startLiveBarcodeScanner();
     } else {
-        // Fallback to the file input method
         document.getElementById('cameraInput').click();
     }
 }
 
-async function startLiveBarcodeScanner() {
+
+function startLiveBarcodeScanner() {
     const scanBtn = document.getElementById('scanBtn');
-    
-    try {
-        scanBtn.innerHTML = '📸 Starting Camera...';
-        scanBtn.disabled = true;
-        
-        // Create the scanner overlay
-        const scannerOverlay = createScannerOverlay();
-        document.body.appendChild(scannerOverlay);
-        
-        // Get camera stream with barcode-friendly settings
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { 
-                facingMode: 'environment',
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
-                focusMode: 'continuous',
-                torch: false
-            }
-        });
-        
-        const video = scannerOverlay.querySelector('#scannerVideo');
-        video.srcObject = stream;
-        
-        // Wait for video to be ready
-        video.onloadedmetadata = () => {
-            video.play();
-            scanBtn.innerHTML = '📱 Point at barcode - Safari will detect it';
-            
-            // Add tap-to-focus functionality
-            video.addEventListener('click', function(e) {
-                // This helps with focus on iOS
-                video.focus();
-            });
-        };
-        
-        // Set up the close function
-        window.closeBarcodeScanner = () => {
-            stream.getTracks().forEach(track => track.stop());
-            document.body.removeChild(scannerOverlay);
+    scanBtn.innerHTML = '📸 Starting Camera...';
+    scanBtn.disabled = true;
+
+    const scannerOverlay = createScannerOverlay();
+    document.body.appendChild(scannerOverlay);
+
+    const video = scannerOverlay.querySelector('#scannerVideo');
+
+    Quagga.init({
+        inputStream: {
+            type: "LiveStream",
+            constraints: {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            target: video
+        },
+        decoder: {
+            readers: ["code_128_reader", "code_39_reader", "itf_reader"]
+        },
+        locate: true
+    }, function(err) {
+        if (err) {
+            showError("Camera error: " + err.message);
             scanBtn.innerHTML = '📷 Scan';
             scanBtn.disabled = false;
-        };
-        
-    } catch (error) {
-        showError('Camera access denied: ' + error.message);
+            document.body.removeChild(scannerOverlay);
+            return;
+        }
+        Quagga.start();
+        scanBtn.innerHTML = '📱 Point at barcode';
+
+        Quagga.onDetected(result => {
+            const code = result.codeResult.code;
+            if (code) {
+                const trackingInput = document.getElementById("trackingInput");
+                trackingInput.value = code;
+                showSuccess("✅ Scanned: " + code);
+                Quagga.stop();
+                closeBarcodeScanner();
+                lookupShippingLabel();
+            }
+        });
+    });
+
+    window.closeBarcodeScanner = () => {
+        Quagga.stop();
+        document.body.removeChild(scannerOverlay);
         scanBtn.innerHTML = '📷 Scan';
         scanBtn.disabled = false;
-    }
+    };
 }
 
 function createScannerOverlay() {
