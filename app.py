@@ -1286,7 +1286,163 @@ def sign_pdf():
         
     except Exception as err:
         return jsonify({"error": f"PDF signing failed: {str(err)}"}), 500
+    
+#shipstation v1 what's this
+@app.route('/ops/whats-this')
+def whats_this_interface():
+    """Protected shipment lookup interface"""
+    if not is_authorized():
+        abort(403)
+    if not check_auth():
+        return redirect('/ops')
+    return render_template('whats_this.html')
 
+#shipstation v1 routes
+@app.route('/api/shipment/<tracking_number>')
+def get_shipment_info(tracking_number):
+    """Get shipment information by tracking number from ShipStation v1 API"""
+    try:
+        # Get pre-encoded Basic Auth token from environment
+        shipstation_v1_auth = os.getenv('SHIPSTATION_V1_API_KEY')
+        
+        if not shipstation_v1_auth:
+            return jsonify({"error": "ShipStation v1 API credentials not configured"}), 500
+        
+        # Make request to ShipStation v1 Shipments API
+        response = requests.get(
+            f"https://ssapi.shipstation.com/shipments?trackingNumber={tracking_number}&includeShipmentItems=true",
+            headers={
+                "Authorization": f"Basic {shipstation_v1_auth}",
+                "Content-Type": "application/json"
+            }
+        )
+        
+        if response.status_code == 404:
+            return jsonify({"error": "Tracking number not found"}), 404
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        # Debug logging
+        print(f"ShipStation API Response Status: {response.status_code}")
+        print(f"ShipStation API Response Data: {data}")
+        
+        # Handle different response structures
+        shipments = data.get('shipments', [])
+        if not shipments:
+            # Try alternative structure
+            if 'shipment' in data:
+                shipments = [data['shipment']]
+            elif isinstance(data, list):
+                shipments = data
+            else:
+                return jsonify({"error": "No shipments found for this tracking number"}), 404
+        
+        if len(shipments) == 0:
+            return jsonify({"error": "No shipments found for this tracking number"}), 404
+            
+        shipment = shipments[0]  # Get the first shipment
+        
+        # Extract relevant information from v1 API response
+        shipment_info = {
+            "shipment_id": shipment.get("shipmentId"),
+            "order_id": shipment.get("orderId"),
+            "order_key": shipment.get("orderKey"),
+            "order_number": shipment.get("orderNumber"),
+            "tracking_number": shipment.get("trackingNumber"),
+            "carrier_code": shipment.get("carrierCode"),
+            "service_code": shipment.get("serviceCode"),
+            "ship_date": shipment.get("shipDate"),
+            "delivery_date": shipment.get("deliveryDate"),
+            "void_date": shipment.get("voidDate"),
+            "voided": shipment.get("voided"),
+            
+            # Customer info
+            "ship_to": {
+                "name": shipment.get("shipTo", {}).get("name"),
+                "company": shipment.get("shipTo", {}).get("company"),
+                "street1": shipment.get("shipTo", {}).get("street1"),
+                "street2": shipment.get("shipTo", {}).get("street2"),
+                "street3": shipment.get("shipTo", {}).get("street3"),
+                "city": shipment.get("shipTo", {}).get("city"),
+                "state": shipment.get("shipTo", {}).get("state"),
+                "postal_code": shipment.get("shipTo", {}).get("postalCode"),
+                "country": shipment.get("shipTo", {}).get("country"),
+                "phone": shipment.get("shipTo", {}).get("phone"),
+                "residential": shipment.get("shipTo", {}).get("residential")
+            },
+            
+            # Shipping cost info
+            "shipment_cost": shipment.get("shipmentCost"),
+            "insurance_cost": shipment.get("insuranceCost"),
+            "weight": {
+                "value": shipment.get("weight", {}).get("value"),
+                "units": shipment.get("weight", {}).get("units")
+            },
+            "dimensions": shipment.get("dimensions", {}),
+            
+            # Items in the shipment
+            "items": []
+        }
+        
+        # Process items with better null checking
+        shipment_items = shipment.get("shipmentItems", []) or []
+        for item in shipment_items:
+            if item:  # Make sure item is not None
+                shipment_info["items"].append({
+                    "order_item_id": item.get("orderItemId"),
+                    "line_item_key": item.get("lineItemKey"),
+                    "sku": item.get("sku"),
+                    "name": item.get("name"),
+                    "image_url": item.get("imageUrl"),
+                    "weight": {
+                        "value": item.get("weight", {}).get("value") if item.get("weight") else None,
+                        "units": item.get("weight", {}).get("units") if item.get("weight") else None
+                    },
+                    "quantity": item.get("quantity", 0),
+                    "unit_price": item.get("unitPrice", 0),
+                    "warehouse_location": item.get("warehouseLocation"),
+                    "options": item.get("options", []) or []
+                })
+        
+        # Calculate totals with better null checking
+        total_items = 0
+        total_value = 0
+        
+        for item in shipment_info["items"]:
+            quantity = item.get("quantity", 0) or 0
+            unit_price = item.get("unit_price", 0) or 0
+            total_items += quantity
+            total_value += (quantity * unit_price)
+        
+        total_weight = 0
+        weight_data = shipment_info.get("weight", {})
+        if weight_data and weight_data.get("value"):
+            total_weight = weight_data["value"]
+        
+        shipment_info["totals"] = {
+            "total_items": total_items,
+            "total_weight": total_weight,
+            "total_value": total_value,
+            "item_count": len(shipment_info["items"])
+        }
+        
+        return jsonify({
+            "success": True,
+            "shipment": shipment_info
+        })
+        
+    except requests.HTTPError as http_err:
+        return jsonify({
+            "error": f"ShipStation API error: {http_err}",
+            "details": response.text if 'response' in locals() else "No response details"
+        }), 500
+    except Exception as err:
+        return jsonify({
+            "error": f"An error occurred: {str(err)}"
+        }), 500
+        
+        
 if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')
