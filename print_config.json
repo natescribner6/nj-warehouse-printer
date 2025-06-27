@@ -1,0 +1,416 @@
+{
+  "products": [
+    {
+      "id": "have-buckmans-not-champion",
+      "name": "Have Buckmans not Champion",
+      "description": "custom acid label",
+      "pdf_file": "labels/buckmans-not-champion.pdf",
+      "image": "b4a803ebb6024dff9b7fe89db86fc0b4.jpg",
+      "printer_id": 74471602,
+      "category": "General",
+      "copies": 5,
+      "paper_size": ""
+    },
+    {
+      "id": "thanks-for-ordering",
+      "name": "thanks for ordering",
+      "description": "thanks for ordering",
+      "pdf_file": "c945f76270b4480298a9054c663f0f35.pdf",
+      "image": "aa67c81708194672a87b6a491f9e6a6c.jpg",
+      "printer_id": 74471602,
+      "category": "General",
+      "paper_size": ""
+    },
+    {
+      "id": "pooluxe-de-6lb",
+      "name": "Pooluxe DE 6 lb",
+      "description": "pooluxe de 6lb",
+      "pdf_file": "538cd98d6bf640288946f50b9c99472e.pdf",
+      "image": "ee9f13a26ca441838c02d0ec7fe4a8eb.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "this-side-up-fragile",
+      "name": "this side up fragile",
+      "description": "this side up fragile, 1 ct",
+      "pdf_file": "7d06851e6cd4424cbadc1dd28499060d.pdf",
+      "image": "c44a573ccc8b4feb8f7c6459918564be.jpg",
+      "printer_id": 74471602,
+      "category": "General",
+      "copies": 1,
+      "paper_size": ""
+    },
+    {
+      "id": "handle-with-care",
+      "name": "handle with care sticker",
+      "description": "handle with care sticker",
+      "pdf_file": "f50949c0e6fb4f4fa83a547e71cf34de.pdf",
+      "image": "366357c750a3486f917eee0e799eeb6b.jpg",
+      "printer_id": 74471602,
+      "category": "General",
+      "paper_size": ""
+    },
+    {
+      "id": "up-arrow-only",
+      "name": "up arrow only",
+      "description": "up arrow only",
+      "pdf_file": "0a624b4b29674c43bd73b7238cffc59d.pdf",
+      "image": "a98d15d7fd5d4541aaf0e27a74a2aaf3.jpg",
+      "printer_id": 74471602,
+      "category": "General",
+      "paper_size": ""
+    },
+    {
+      "id": "spaluxe old back label",
+      "name": "spaluxe oxidizing back label (OLD)",
+      "description": "spaluxe oxidizing back label (OLD)",
+      "pdf_file": "add005954c6d41cf9b1ccecf3d617db3.pdf",
+      "image": "daf198d16faf4b90b5a8d2fec3742527.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "spaluxe-5lb-oxidizing",
+      "name": "spaluxe oxidizing 5lb (FRONT)",
+      "description": "5lb oxidizing (FRONT)",
+      "pdf_file": "da52ebd62a414fd0ad7d7f5b0b88beae.pdf",
+      "image": "c17e865a713f4763b6624159e79438e1.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "spaluxe-oxidizing-front-10lb",
+      "name": "spaluxe oxidizing shock (10lb, front)",
+      "description": "spaluxe oxidizing shock, 10lb, front",
+      "pdf_file": "7b6b51a781c14c2cbf64ee0e2e21c3bd.pdf",
+      "image": "ebdee2304e97426cb8a09df41ae1ecef.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "pooluxe-de-30lb",
+      "name": "pooluxe de 30lb",
+      "description": "pooluxe de 30lb",
+      "pdf_file": "e0a4d795b45d43db9dc0d6a7f8dab7f8.pdf",
+      "image": "dc2c7d474a134adca9e934681dff7174.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "pooluxe-de-12lb",
+      "name": "pooluxe de 12lb",
+      "description": "pooluxe de 12lb",
+      "pdf_file": "52dfb7810aab45698338d58a797dee0f.pdf",
+      "image": "63e5c109aa034aa9a683e25be12aa17e.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "pooluxe-de-24lb",
+      "name": "pooluxe de 24lb",
+      "description": "pooluxe de 24lb",
+      "pdf_file": "f42d5c6445a545c8bfa0b09cbafeba64.pdf",
+      "image": "01e9c32982274db680b89e72c202b4e4.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "play sand 15lb bucket",
+      "name": "play sand 15lb bucket ",
+      "description": "play sand 15lb bucket",
+      "pdf_file": "08f1fc9df6af41f39c0d768d4f9d2dec.pdf",
+      "image": "b21b906dc6064ddabe1ff9888ffd18f1.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "play-sand-45llb",
+      "name": "play sand 45lb bucket",
+      "description": "play sand 45lb bucket",
+      "pdf_file": "74a20ac5f0154c8da387bb13c5731384.pdf",
+      "image": "6e6d9dabc56443949a89ed2f021cda80.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "playsand-30lb",
+      "name": "play sand 30lb bucket",
+      "description": "",
+      "pdf_file": "812144452dd7432da2ab510b5f16a1a3.pdf",
+      "image": "9c6ae2b250a843aa9757e3d9ecfc8c73.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "baking-soda-15lb",
+      "name": "baking soda 15lb bucket",
+      "description": "baking soda 15lb bucket",
+      "pdf_file": "ca28b5d3b5e340cdb6a39d32d0c8a6d6.pdf",
+      "image": "303851b49ac14c7c8835e13373adad32.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "activated-charcoal-5lb",
+      "name": "activated charcoal 5lb",
+      "description": "charcoal bucket 5lb",
+      "pdf_file": "4f6611eeb5824868b43bab6539f018e4.pdf",
+      "image": "98c5b0b068f046dcba18018f8159ba5a.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "epsom 15lb",
+      "name": "epsom 15lb",
+      "description": "epsom 15lb",
+      "pdf_file": "f39126b25fcc45f8ac0578434866dff0.pdf",
+      "image": "ff55b4585d084f9bac4d25c680a2141e.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "baking-soda-30lb",
+      "name": "baking-soda-30lb",
+      "description": "baking soda, 30lb bucket",
+      "pdf_file": "2aa78cbddb5f42aa9f6f740ede28214f.pdf",
+      "image": "ce355e7be5a143b6a548cd6949230840.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "baking-soda-45lb",
+      "name": "baking soda 45lb",
+      "description": "baking soda 45lb",
+      "pdf_file": "0495e0dadafe493b97cf79ebeaaec6d2.pdf",
+      "image": "4c06123636d54b1380eef7c25c35fa32.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "charcoal-15lb",
+      "name": "charcoal 15lb",
+      "description": "charcoal 15lb",
+      "pdf_file": "38abb8d8aeea4b598de007e92586f0fa.pdf",
+      "image": "6003c1ef995e4599ab6a864ab30fd567.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "charcoal-10lb",
+      "name": "charcoal 10lb",
+      "description": "charcoal 10lb",
+      "pdf_file": "436f9de5c29247238436011a47e95590.pdf",
+      "image": "fa6ffadf6c17481d9e3b7250fecaaf0a.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "washing-soda-15lb",
+      "name": "washing soda 15lb",
+      "description": "washing soda 15lb",
+      "pdf_file": "96446069370043eaa1e272712dea5809.pdf",
+      "image": "0182635fa60a4e3fb71eed3faaf3f760.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "epsom salt 45lb",
+      "name": "epsom salt 45lb",
+      "description": "epsom salt 45lb",
+      "pdf_file": "ff7b7e0c728144eeabe49175513c40ec.pdf",
+      "image": "828634f4d65548dda70f17001df79f4b.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "epsom salt 30lb",
+      "name": "epsom salt 30lb",
+      "description": "epsom salt 30lb",
+      "pdf_file": "a92151b14fc84e1e8e72627d2a089cf4.pdf",
+      "image": "0ef02fa05e5b456d87a6f2fd8ea9854f.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "pooluxe calcium 15lb",
+      "name": "pooluxe calcium 15lb",
+      "description": "pooluxe calcium 15lb",
+      "pdf_file": "fb8b5a18e1ff467bb5bd96a6670cb0ab.pdf",
+      "image": "385b20e3f3374ca281c5243136c41abc.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "pooluxe oxidizing 25lb",
+      "name": "pooluxe oxi 25lb",
+      "description": "pooluxe oxidizing 25lb",
+      "pdf_file": "d0dd2c743e98420eaab3ee535fdd414b.pdf",
+      "image": "305e479e4960438fb235bc4fe6cb658f.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "pooluxe calcium 30lb",
+      "name": "pooluxe calcium 30lb",
+      "description": "pooluxe calcium 30lb",
+      "pdf_file": "b9b01fbd558c4b199a9daf79ccd3aa4a.pdf",
+      "image": "62c8ce60a27c41f0af322d78cf55b216.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "pooluxe conditioner 30lb",
+      "name": "pooluxe conditioner 30lb",
+      "description": "pooluxe conditioner 30lb",
+      "pdf_file": "2ddea96aed1249cab3de146c8ae2774a.pdf",
+      "image": "9ba3311add06430098bb25749e4d187e.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "pooluxe alkalinity 10lb",
+      "name": "pooluxe alkalinity 10lb",
+      "description": "pooluxe alkalinity 10lb",
+      "pdf_file": "e69e7e3c8cc640b0944b2607dfe95fe3.pdf",
+      "image": "4ee3488a89f14456aadbcccb2673091b.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "washing-soda-30lb",
+      "name": "washing soda 30lb label",
+      "description": "washing soda 30lb label",
+      "pdf_file": "8e414472b8bf4a1696930aa081bcfc86.pdf",
+      "image": "173cbc78a37e492c8b481661b7a90bb4.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "45lb old pooluxe oxidizing shock",
+      "name": "45lb old pooluxe oxidizing shock",
+      "description": "45lb old pooluxe oxidizing shock",
+      "pdf_file": "8a3cfa0b2ed7492b9160c0e96268992b.pdf",
+      "image": "201ca3ec9c514a46861f78912fed57c9.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "conditioner old 15lb",
+      "name": "conditioner-old-15lb",
+      "description": "conditioner old 15lb",
+      "pdf_file": "8bdccce96f064cad84e6f3854fb35c35.pdf",
+      "image": "511d1c037cdf4b5c8c24a3b2452b6bf6.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "caustic-15lb",
+      "name": "caustic-15lb",
+      "description": "caustic-15lb",
+      "pdf_file": "447f9ec791454a8eb21faf706625f138.pdf",
+      "image": "72116481b7b94c4683c67e11d3993d8f.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "bagged-sand-10-20-40lb",
+      "name": "bagged-sand-misc",
+      "description": "bagged sand, misc sizes",
+      "pdf_file": "f9c48438c48d4de4865d0e8da7ba656f.pdf",
+      "image": "0938d14f53da4539a35df472df41d3b7.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "aquarium-salt-45lb",
+      "name": "aquarium salt 45lb",
+      "description": "aquarium-salt-45lb",
+      "pdf_file": "e06905e64d5b4e068a2007851906c92e.pdf",
+      "image": "26e247477bc54e61b690dabcb47517a8.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "washing-soda-45lb",
+      "name": "washing soda 45lb",
+      "description": "washing soda 45lb",
+      "pdf_file": "2582994ed66a4169b164da4eb3f35b2b.pdf",
+      "image": "e00ffa7d56f34e018da41e2119b296d6.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
+    },
+    {
+      "id": "ph-reducer-30lb",
+      "name": "ph-reducer-30lb",
+      "description": "ph-reducer-30lb",
+      "pdf_file": "96d66382dd414f2db43d6148ebabfff9.pdf",
+      "image": "73add5a4444d42629c71ebecfe6ac283.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "spaluxe-calcium-2lb",
+      "name": "spaluxe-calcium-2lb",
+      "description": "spaluxe-calcium-2lb",
+      "pdf_file": "f55de1f133f04e2ea1e030f04b268319.pdf",
+      "image": "43b0341d622643af9b0ca1e04d70b44d.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "45lb oxidizing shock",
+      "name": "45 lb oxidizing shock",
+      "description": "45lb oxidizing shock",
+      "pdf_file": "9b960077cdbf43578072c29bc78f35c7.pdf",
+      "image": "3d372421d3c141119f8a598f41d2ef2d.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "25lb-pooluxe-oxidizing-new",
+      "name": "NEW 25lb oxidizing shock label",
+      "description": "new 25lb oxidizing shock",
+      "pdf_file": "899e6717b278449b91eb7e41704f31bb.pdf",
+      "image": "0713807ed50443ebb118f45e19d3c2fb.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    }
+  ]
+}

@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedal-Controlled Batch Printing</title>
+    <style>
+
+        .batch-notes-display {
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    margin: auto;
+    text-align: center;
+    font-size: 30px;
+}
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .batch-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+        
+        .batch-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: black;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .current-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .current-label h2 {
+            margin: 0 0 15px 0;
+            font-size: 2.5rem;
+        }
+        
+        .current-label .tracking {
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 10px 0;
+        }
+        
+        .current-label .address {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin: 15px 0;
+        }
+        
+        .status-display {
+            background: #343a40;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .status-waiting {
+            background: #17a2b8;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-printing {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .status-verifying {
+            background: #fd7e14;
+        }
+        
+        .status-success {
+            background: #28a745;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .progress-section {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-numbers {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        
+        .progress-item {
+            text-align: center;
+        }
+        
+        .progress-item .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .progress-item .label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #28a745);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .manual-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .pedal-indicator {
+            background: #f8f9fa;
+            border: 3px solid #dee2e6;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .pedal-active {
+            border-color: #28a745 !important;
+            background: #d4edda !important;
+            color: #155724;
+        }
+        
+        .completed-labels {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .label-history {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        
+        .history-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-item.success {
+            background: #d4edda;
+        }
+        
+        .history-item.error {
+            background: #f8d7da;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .large-text {
+            font-size: 1.2rem;
+        }
+        
+        .keyboard-hint {
+            background: #e2e3e5;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🦶 Pedal-Controlled Batch Printing</h1>
+            <p>Press foot pedal (or spacebar) to print each label one at a time</p>
+        </div>
+        
+        <div class="batch-input">
+            <input type="text" id="batchNumber" placeholder="Enter batch number (e.g., 107286)" value="">
+            <button class="btn btn-primary" onclick="loadBatch()">Load Batch</button>
+        </div>
+        
+        <div class="keyboard-hint">
+            💡 <strong>Tip:</strong> Press SPACEBAR as foot pedal simulation, or ENTER to confirm print success
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <div class="progress-section" id="progressSection">
+            <div class="progress-numbers">
+                <div class="progress-item">
+                    <div class="number" id="currentIndex">0</div>
+                    <div class="label">Current</div>
+                </div>
+                <div class="progress-item">
+                    <div class="number" id="totalLabels">0</div>
+                    <div class="label">Total</div>
+                </div>
+                <div class="progress-item">
+                    <div class="number" id="successCount">0</div>
+                    <div class="label">Printed</div>
+                </div>
+                <div class="progress-item">
+                    <div class="number" id="errorCount">0</div>
+                    <div class="label">Failed</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="current-label" id="currentLabel">
+            <h2>📋 Current Label</h2>
+            <div class="tracking" id="currentTracking">-</div>
+            <div class="address" id="currentAddress">-</div>
+        </div>
+        
+        <div class="status-display" id="statusDisplay">
+            Ready to start...
+        </div>
+        
+        <div class="pedal-indicator" id="pedalIndicator">
+            🦶 Press foot pedal (SPACEBAR) to print next label
+        </div>
+        
+        <div class="manual-controls">
+            <button class="btn btn-success" onclick="startBatchSession()" id="startBtn" style="display: none;">
+                🚀 Start Printing Session
+            </button>
+            <button class="btn btn-warning" onclick="pauseSession()" id="pauseBtn" style="display: none;">
+                ⏸️ Pause
+            </button>
+            <button class="btn btn-danger" onclick="stopSession()" id="stopBtn" style="display: none;">
+                ⏹️ Stop
+            </button>
+            <button class="btn btn-success" onclick="manualPrintConfirm()" id="confirmBtn" style="display: none;">
+                ✅ Confirm Print Success
+            </button>
+            <button class="btn btn-danger" onclick="manualPrintFail()" id="failBtn" style="display: none;">
+                ❌ Mark as Failed
+            </button>
+        </div>
+        
+        <div class="completed-labels" id="completedSection">
+            <h3>📊 Print History</h3>
+            <div class="label-history" id="labelHistory"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentBatch = null;
+        let currentLabels = [];
+        let currentIndex = 0;
+        let isSessionActive = false;
+        let isPrintingInProgress = false;
+        let awaitingVerification = false;
+        let currentPrintJobId = null;
+        let successCount = 0;
+        let errorCount = 0;
+        let printHistory = [];
+
+        // Keyboard event listener for foot pedal simulation
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                handlePedalPress();
+            } else if (event.code === 'Enter') {
+                event.preventDefault();
+                if (awaitingVerification) {
+                    manualPrintConfirm();
+                }
+            } else if (event.code === 'Escape') {
+                event.preventDefault();
+                if (awaitingVerification) {
+                    manualPrintFail();
+                }
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+function updateStatus(message, className = '') {
+    const statusDisplay = document.getElementById('statusDisplay');
+    
+    // Create or update batch notes display
+    let batchNotesDisplay = document.getElementById('batchNotesDisplay');
+    if (!batchNotesDisplay) {
+        batchNotesDisplay = document.createElement('div');
+        batchNotesDisplay.id = 'batchNotesDisplay';
+        batchNotesDisplay.className = 'batch-notes-display';
+        statusDisplay.parentNode.insertBefore(batchNotesDisplay, statusDisplay);
+    }
+    
+    // Update batch notes content
+    if (currentBatch && currentBatch.batch_notes) {
+        batchNotesDisplay.textContent = `ITEMS: (${currentLabels.length})x of: ${currentBatch.batch_notes.toUpperCase()} (${currentLabels.length})`;
+        batchNotesDisplay.style.display = 'block';
+    } else {
+        batchNotesDisplay.style.display = 'none';
+    }
+    
+    // Update main status (without batch notes now)
+    statusDisplay.textContent = `Batch loaded! ${currentLabels.length} labels ready. Click Start to begin.`;
+    statusDisplay.className = 'status-display ' + className;
+    statusDisplay.style.display = 'block';
+}
+
+        function updateProgress() {
+            document.getElementById('currentIndex').textContent = currentIndex + 1;
+            document.getElementById('totalLabels').textContent = currentLabels.length;
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('errorCount').textContent = errorCount;
+            
+            const progress = (currentIndex / currentLabels.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function updateCurrentLabel() {
+            if (currentIndex < currentLabels.length) {
+                const label = currentLabels[currentIndex];
+                console.log(label)
+                document.getElementById('currentTracking').textContent = label.tracking_number;
+                document.getElementById('currentAddress').textContent = 
+                    `${label.ship_to.name} - ${label.ship_to.address_line1}, ${label.ship_to.city_locality}, ${label.ship_to.state_province}`;
+                document.getElementById('currentLabel').style.display = 'block';
+            } else {
+                document.getElementById('currentLabel').style.display = 'none';
+            }
+        }
+
+        async function loadBatch() {
+            const batchNumber = document.getElementById('batchNumber').value.trim();
+            
+            if (!batchNumber) {
+                showError('Please enter a batch number');
+                return;
+            }
+
+            try {
+                updateStatus('Loading batch...', 'status-waiting');
+
+                // Load batch info
+                const batchResponse = await fetch(`/api/batch/${batchNumber}`);
+                const batchData = await batchResponse.json();
+
+                if (!batchData.success) {
+                    showError(batchData.error);
+                    updateStatus('Ready to start...');
+                    return;
+                }
+
+                currentBatch = batchData.batch;
+                console.log(currentBatch)
+
+                // Load labels
+                const labelsResponse = await fetch(`/api/batch/${currentBatch.batch_id}/labels`);
+                const labelsData = await labelsResponse.json();
+
+                if (!labelsData.success) {
+                    showError(labelsData.error);
+                    updateStatus('Ready to start...');
+                    return;
+                }
+
+                currentLabels = labelsData.labels;
+                currentIndex = 0;
+                successCount = 0;
+                errorCount = 0;
+                printHistory = [];
+                updateProgress();
+                updateCurrentLabel();
+                
+                document.getElementById('progressSection').style.display = 'block';
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('completedSection').style.display = 'block';
+                
+                updateStatus(`Batch loaded! ${currentLabels.length} labels ready. -  ${currentBatch.batch_notes.toUpperCase()} - Click Start to begin.`, 'status-success');
+                showSuccess(`Loaded batch ${batchNumber} with ${currentLabels.length} labels`);
+
+            } catch (error) {
+                showError(`Failed to load batch: ${error.message}`);
+                updateStatus('Ready to start...');
+            }
+        }
+
+        function startBatchSession() {
+            isSessionActive = true;
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            document.getElementById('pedalIndicator').style.display = 'block';
+            
+            if (currentIndex < currentLabels.length) {
+                updateStatus('🦶 Press foot pedal (SPACEBAR) to print next label', 'status-waiting');
+            } else {
+                completeSession();
+            }
+        }
+
+        function pauseSession() {
+            isSessionActive = false;
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('pedalIndicator').style.display = 'none';
+            updateStatus('Session paused. Click Start to resume.', 'status-warning');
+        }
+
+        function stopSession() {
+            isSessionActive = false;
+            isPrintingInProgress = false;
+            awaitingVerification = false;
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('failBtn').style.display = 'none';
+            document.getElementById('pedalIndicator').style.display = 'none';
+            updateStatus('Session stopped.', 'status-error');
+        }
+
+        function handlePedalPress() {
+            if (!isSessionActive || isPrintingInProgress || awaitingVerification) {
+                return;
+            }
+
+            if (currentIndex >= currentLabels.length) {
+                completeSession();
+                return;
+            }
+
+            printCurrentLabel();
+        }
+
+        async function printCurrentLabel() {
+            if (isPrintingInProgress || currentIndex >= currentLabels.length) {
+                return;
+            }
+
+            isPrintingInProgress = true;
+            const label = currentLabels[currentIndex];
+            
+            updateStatus(`🖨️ Printing: ${label.tracking_number}`, 'status-printing');
+            document.getElementById('pedalIndicator').style.display = 'none';
+
+            try {
+                const printResponse = await fetch('/api/batch/print-label', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pdf_url: label.pdf_url,
+                        tracking_number: label.tracking_number,
+                        label_id: label.label_id
+                    })
+                });
+                
+                const printResult = await printResponse.json();
+                
+                if (printResult.success) {
+                    currentPrintJobId = printResult.job_id;
+                    updateStatus(`⏳ Verifying print: ${label.tracking_number}`, 'status-verifying');
+                    
+                    // Show manual verification buttons
+                    document.getElementById('confirmBtn').style.display = 'inline-block';
+                    document.getElementById('failBtn').style.display = 'inline-block';
+                    
+                    isPrintingInProgress = false;
+                    awaitingVerification = true;
+                    
+                    // Auto-check print status in background
+                    setTimeout(() => checkPrintStatus(), 3000);
+                    
+                } else {
+                    handlePrintFailure(`Print request failed: ${printResult.error}`);
+                }
+                
+            } catch (error) {
+                handlePrintFailure(`Print error: ${error.message}`);
+            }
+        }
+
+        async function checkPrintStatus() {
+            if (!currentPrintJobId || !awaitingVerification) return;
+
+            try {
+                const response = await fetch(`/api/printnode/job/${currentPrintJobId}/status`);
+                const data = await response.json();
+                
+                if (data.success && data.is_complete) {
+                    if (data.state === 'done') {
+                        // Auto-confirm if print job completed successfully
+                        setTimeout(() => {
+                            if (awaitingVerification) { // Still waiting for manual confirmation
+                                manualPrintConfirm();
+                            }
+                        }, 2000);
+                    } else {
+                        // Print job failed
+                        setTimeout(() => {
+                            if (awaitingVerification) {
+                                manualPrintFail();
+                            }
+                        }, 1000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking print status:', error);
+            }
+        }
+
+        function manualPrintConfirm() {
+            if (!awaitingVerification) return;
+            
+            const label = currentLabels[currentIndex];
+            
+            // Record success
+            printHistory.push({
+                index: currentIndex + 1,
+                tracking: label.tracking_number,
+                name: label.ship_to.name,
+                status: 'success',
+                timestamp: new Date().toLocaleTimeString()
+            });
+            
+            successCount++;
+            awaitingVerification = false;
+            currentPrintJobId = null;
+            
+            // Hide verification buttons
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('failBtn').style.display = 'none';
+            
+            // Move to next label
+            currentIndex++;
+            updateProgress();
+            updateCurrentLabel();
+            updatePrintHistory();
+            
+            if (currentIndex < currentLabels.length) {
+                updateStatus('🦶 Press foot pedal (SPACEBAR) to print next label', 'status-waiting');
+                document.getElementById('pedalIndicator').style.display = 'block';
+            } else {
+                completeSession();
+            }
+            
+            showSuccess(`✅ Label ${currentIndex} confirmed printed`);
+        }
+
+        function manualPrintFail() {
+            if (!awaitingVerification) return;
+            
+            handlePrintFailure('Manual verification failed');
+        }
+
+        function handlePrintFailure(errorMessage) {
+            const label = currentLabels[currentIndex];
+            
+            // Record failure
+            printHistory.push({
+                index: currentIndex + 1,
+                tracking: label.tracking_number,
+                name: label.ship_to.name,
+                status: 'error',
+                error: errorMessage,
+                timestamp: new Date().toLocaleTimeString()
+            });
+            
+            errorCount++;
+            isPrintingInProgress = false;
+            awaitingVerification = false;
+            currentPrintJobId = null;
+            
+            // Hide verification buttons
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('failBtn').style.display = 'none';
+            
+            // Move to next label
+            currentIndex++;
+            updateProgress();
+            updateCurrentLabel();
+            updatePrintHistory();
+            
+            if (currentIndex < currentLabels.length) {
+                updateStatus('🦶 Press foot pedal (SPACEBAR) to print next label', 'status-waiting');
+                document.getElementById('pedalIndicator').style.display = 'block';
+            } else {
+                completeSession();
+            }
+            
+            showError(`❌ Label ${currentIndex} failed: ${errorMessage}`);
+        }
+
+        function updatePrintHistory() {
+            const historyDiv = document.getElementById('labelHistory');
+            historyDiv.innerHTML = '';
+            
+            printHistory.slice().reverse().forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = `history-item ${item.status}`;
+                
+                const statusIcon = item.status === 'success' ? '✅' : '❌';
+                const errorText = item.error ? ` - ${item.error}` : '';
+                
+                historyItem.innerHTML = `
+                    <div>
+                        ${statusIcon} <strong>#${item.index}</strong> ${item.tracking} - ${item.name}${errorText}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #6c757d;">
+                        ${item.timestamp}
+                    </div>
+                `;
+                
+                historyDiv.appendChild(historyItem);
+            });
+        }
+
+        function completeSession() {
+            isSessionActive = false;
+            isPrintingInProgress = false;
+            awaitingVerification = false;
+            
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('confirmBtn').style.display = 'none';
+            document.getElementById('failBtn').style.display = 'none';
+            document.getElementById('pedalIndicator').style.display = 'none';
+            
+            const successRate = Math.round((successCount / currentLabels.length) * 100);
+            updateStatus(`🎉 Batch Complete! ${successCount}/${currentLabels.length} labels printed (${successRate}% success)`, 'status-success');
+            
+            if (errorCount === 0) {
+                showSuccess(`🎉 Perfect! All ${successCount} labels printed successfully!`);
+            } else {
+                showError(`⚠️ Batch complete with ${errorCount} failures. Check history for details.`);
+            }
+        }
+
+        // Allow Enter key to load batch
+        document.getElementById('batchNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadBatch();
+            }
+        });
+
+        // Initialize
+        updateStatus('Enter a batch number to get started');
+    </script>
+</body>
+</html>
