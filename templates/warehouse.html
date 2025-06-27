@@ -456,6 +456,28 @@
     margin-bottom: 5px;
 }
 
+#scannerContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+#scannerContainer video {
+    max-width: 90%;
+    max-height: 60%;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+}
+
     </style>
 </head>
 <body>
@@ -1065,39 +1087,127 @@ async function signAndDownloadPdf() {
 }
 
 function scanBarcode() {
-    const cameraInput = document.getElementById('cameraInput');
-    const scanBtn = document.getElementById('scanBtn');
-    
-    // Trigger camera
-    scanBtn.innerHTML = '📸 Opening Camera...';
-    scanBtn.disabled = true;
-    
-    // Reset button after a moment in case user cancels
-    setTimeout(() => {
-        scanBtn.innerHTML = '📷 Scan';
-        scanBtn.disabled = false;
-    }, 5000);
-    
-    cameraInput.click();
-}
-
-function handleCameraResult(event) {
     const scanBtn = document.getElementById('scanBtn');
     const trackingInput = document.getElementById('trackingInput');
     
+    // Check if BarcodeDetector is available
+    if ('BarcodeDetector' in window) {
+        startBarcodeScanner();
+    } else {
+        // Fallback: Use getUserMedia for live camera
+        startCameraStream();
+    }
+}
+
+async function startCameraStream() {
+    const scanBtn = document.getElementById('scanBtn');
+    
+    try {
+        scanBtn.innerHTML = '📸 Starting Camera...';
+        scanBtn.disabled = true;
+        
+        // Create video element for camera stream
+        const video = document.createElement('video');
+        video.style.width = '100%';
+        video.style.height = '300px';
+        video.style.border = '2px solid #007bff';
+        video.style.borderRadius = '10px';
+        video.autoplay = true;
+        video.playsInline = true;
+        
+        // Create container for scanner
+        const scannerContainer = document.createElement('div');
+        scannerContainer.id = 'scannerContainer';
+        scannerContainer.style.position = 'fixed';
+        scannerContainer.style.top = '0';
+        scannerContainer.style.left = '0';
+        scannerContainer.style.width = '100%';
+        scannerContainer.style.height = '100%';
+        scannerContainer.style.backgroundColor = 'rgba(0,0,0,0.9)';
+        scannerContainer.style.zIndex = '9999';
+        scannerContainer.style.display = 'flex';
+        scannerContainer.style.flexDirection = 'column';
+        scannerContainer.style.justifyContent = 'center';
+        scannerContainer.style.alignItems = 'center';
+        scannerContainer.style.padding = '20px';
+        
+        const instructions = document.createElement('p');
+        instructions.innerHTML = '📱 Point camera at barcode<br>Tap barcode when detected by Safari';
+        instructions.style.color = 'white';
+        instructions.style.textAlign = 'center';
+        instructions.style.marginBottom = '20px';
+        instructions.style.fontSize = '18px';
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '❌ Close Scanner';
+        closeBtn.style.padding = '15px 30px';
+        closeBtn.style.marginTop = '20px';
+        closeBtn.style.border = 'none';
+        closeBtn.style.borderRadius = '10px';
+        closeBtn.style.backgroundColor = '#dc3545';
+        closeBtn.style.color = 'white';
+        closeBtn.style.fontSize = '16px';
+        closeBtn.style.cursor = 'pointer';
+        
+        scannerContainer.appendChild(instructions);
+        scannerContainer.appendChild(video);
+        scannerContainer.appendChild(closeBtn);
+        document.body.appendChild(scannerContainer);
+        
+        // Get camera stream
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: 'environment', // Use back camera
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        
+        video.srcObject = stream;
+        
+        // Close scanner function
+        closeBtn.onclick = () => {
+            stream.getTracks().forEach(track => track.stop());
+            document.body.removeChild(scannerContainer);
+            scanBtn.innerHTML = '📷 Scan';
+            scanBtn.disabled = false;
+        };
+        
+        // On iOS Safari, barcodes should be automatically detected
+        // and show as clickable overlays on the video
+        scanBtn.innerHTML = '📷 Scanner Active';
+        
+    } catch (error) {
+        showError('Camera access denied or not available: ' + error.message);
+        scanBtn.innerHTML = '📷 Scan';
+        scanBtn.disabled = false;
+    }
+}
+
+async function startBarcodeScanner() {
+    // This uses the newer BarcodeDetector API if available
+    const scanBtn = document.getElementById('scanBtn');
+    
+    try {
+        const barcodeDetector = new BarcodeDetector({
+            formats: ['code_128', 'code_39', 'code_93', 'ean_13', 'ean_8']
+        });
+        
+        // For now, fall back to camera stream since BarcodeDetector
+        // implementation varies by browser
+        startCameraStream();
+        
+    } catch (error) {
+        startCameraStream();
+    }
+}
+
+function handleCameraResult(event) {
+    // This is now unused since we're using live camera
+    // Keep it for compatibility
+    const scanBtn = document.getElementById('scanBtn');
     scanBtn.innerHTML = '📷 Scan';
     scanBtn.disabled = false;
-    
-    // On iOS Safari, if a barcode is detected, the user can tap it and it will
-    // populate into a text field. For now, we'll show a message to guide users.
-    if (event.target.files && event.target.files[0]) {
-        showSuccess('📱 Point camera at barcode. Safari will detect it automatically and suggest the tracking number.');
-        
-        // Note: The actual barcode text extraction would happen automatically in Safari
-        // Users will see a popup with the detected text that they can tap to use
-    }
-    
-    // Clear the file input for next use
     event.target.value = '';
 }
 
