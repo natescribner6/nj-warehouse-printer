@@ -1087,130 +1087,129 @@ async function signAndDownloadPdf() {
 }
 
 function scanBarcode() {
-    const scanBtn = document.getElementById('scanBtn');
-    const trackingInput = document.getElementById('trackingInput');
-    
-    // Check if BarcodeDetector is available
-    if ('BarcodeDetector' in window) {
-        startBarcodeScanner();
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        startLiveBarcodeScanner();
     } else {
-        // Fallback: Use getUserMedia for live camera
-        startCameraStream();
+        // Fallback to the file input method
+        document.getElementById('cameraInput').click();
     }
 }
 
-async function startCameraStream() {
+async function startLiveBarcodeScanner() {
     const scanBtn = document.getElementById('scanBtn');
     
     try {
         scanBtn.innerHTML = '📸 Starting Camera...';
         scanBtn.disabled = true;
         
-        // Create video element for camera stream
-        const video = document.createElement('video');
-        video.style.width = '100%';
-        video.style.height = '300px';
-        video.style.border = '2px solid #007bff';
-        video.style.borderRadius = '10px';
-        video.autoplay = true;
-        video.playsInline = true;
+        // Create the scanner overlay
+        const scannerOverlay = createScannerOverlay();
+        document.body.appendChild(scannerOverlay);
         
-        // Create container for scanner
-        const scannerContainer = document.createElement('div');
-        scannerContainer.id = 'scannerContainer';
-        scannerContainer.style.position = 'fixed';
-        scannerContainer.style.top = '0';
-        scannerContainer.style.left = '0';
-        scannerContainer.style.width = '100%';
-        scannerContainer.style.height = '100%';
-        scannerContainer.style.backgroundColor = 'rgba(0,0,0,0.9)';
-        scannerContainer.style.zIndex = '9999';
-        scannerContainer.style.display = 'flex';
-        scannerContainer.style.flexDirection = 'column';
-        scannerContainer.style.justifyContent = 'center';
-        scannerContainer.style.alignItems = 'center';
-        scannerContainer.style.padding = '20px';
-        
-        const instructions = document.createElement('p');
-        instructions.innerHTML = '📱 Point camera at barcode<br>Tap barcode when detected by Safari';
-        instructions.style.color = 'white';
-        instructions.style.textAlign = 'center';
-        instructions.style.marginBottom = '20px';
-        instructions.style.fontSize = '18px';
-        
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '❌ Close Scanner';
-        closeBtn.style.padding = '15px 30px';
-        closeBtn.style.marginTop = '20px';
-        closeBtn.style.border = 'none';
-        closeBtn.style.borderRadius = '10px';
-        closeBtn.style.backgroundColor = '#dc3545';
-        closeBtn.style.color = 'white';
-        closeBtn.style.fontSize = '16px';
-        closeBtn.style.cursor = 'pointer';
-        
-        scannerContainer.appendChild(instructions);
-        scannerContainer.appendChild(video);
-        scannerContainer.appendChild(closeBtn);
-        document.body.appendChild(scannerContainer);
-        
-        // Get camera stream
+        // Get camera stream with barcode-friendly settings
         const stream = await navigator.mediaDevices.getUserMedia({
             video: { 
-                facingMode: 'environment', // Use back camera
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                facingMode: 'environment',
+                width: { ideal: 1920, min: 1280 },
+                height: { ideal: 1080, min: 720 },
+                focusMode: 'continuous',
+                torch: false
             }
         });
         
+        const video = scannerOverlay.querySelector('#scannerVideo');
         video.srcObject = stream;
         
-        // Close scanner function
-        closeBtn.onclick = () => {
+        // Wait for video to be ready
+        video.onloadedmetadata = () => {
+            video.play();
+            scanBtn.innerHTML = '📱 Point at barcode - Safari will detect it';
+            
+            // Add tap-to-focus functionality
+            video.addEventListener('click', function(e) {
+                // This helps with focus on iOS
+                video.focus();
+            });
+        };
+        
+        // Set up the close function
+        window.closeBarcodeScanner = () => {
             stream.getTracks().forEach(track => track.stop());
-            document.body.removeChild(scannerContainer);
+            document.body.removeChild(scannerOverlay);
             scanBtn.innerHTML = '📷 Scan';
             scanBtn.disabled = false;
         };
         
-        // On iOS Safari, barcodes should be automatically detected
-        // and show as clickable overlays on the video
-        scanBtn.innerHTML = '📷 Scanner Active';
-        
     } catch (error) {
-        showError('Camera access denied or not available: ' + error.message);
+        showError('Camera access denied: ' + error.message);
         scanBtn.innerHTML = '📷 Scan';
         scanBtn.disabled = false;
     }
 }
 
-async function startBarcodeScanner() {
-    // This uses the newer BarcodeDetector API if available
-    const scanBtn = document.getElementById('scanBtn');
-    
-    try {
-        const barcodeDetector = new BarcodeDetector({
-            formats: ['code_128', 'code_39', 'code_93', 'ean_13', 'ean_8']
-        });
-        
-        // For now, fall back to camera stream since BarcodeDetector
-        // implementation varies by browser
-        startCameraStream();
-        
-    } catch (error) {
-        startCameraStream();
-    }
+function createScannerOverlay() {
+    const overlay = document.createElement('div');
+    overlay.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div style="background: rgba(0,0,0,0.8); color: white; padding: 15px; text-align: center; position: relative;">
+                <h3 style="margin: 0; font-size: 18px;">📱 Barcode Scanner</h3>
+                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Point camera at tracking number barcode</p>
+                <button onclick="closeBarcodeScanner()" style="position: absolute; right: 15px; top: 15px; background: #dc3545; color: white; border: none; border-radius: 20px; width: 35px; height: 35px; font-size: 18px; cursor: pointer;">✕</button>
+            </div>
+            
+            <!-- Camera View -->
+            <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center;">
+                <video id="scannerVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                
+                <!-- Scanning Reticle -->
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 100px; border: 2px solid #00ff00; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"></div>
+                
+                <!-- Instructions -->
+                <div style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 15px 25px; border-radius: 25px; text-align: center; max-width: 90%;">
+                    <p style="margin: 0; font-size: 16px; font-weight: 500;">📦 Position barcode in the green frame</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Safari will automatically detect and highlight the code</p>
+                </div>
+            </div>
+            
+            <!-- Manual Input Option -->
+            <div style="background: rgba(0,0,0,0.8); padding: 20px; text-align: center;">
+                <input type="text" id="manualTrackingInput" placeholder="Or type tracking number manually..." style="width: 70%; padding: 12px; border: none; border-radius: 25px; font-size: 16px; text-align: center; margin-right: 10px;">
+                <button onclick="useManualInput()" style="padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer;">Use</button>
+            </div>
+        </div>
+    `;
+    return overlay;
 }
 
+// Function to handle manual input
+window.useManualInput = function() {
+    const manualInput = document.getElementById('manualTrackingInput');
+    const trackingInput = document.getElementById('trackingInput');
+    
+    if (manualInput.value.trim()) {
+        trackingInput.value = manualInput.value.trim();
+        closeBarcodeScanner();
+        showSuccess('✅ Tracking number entered manually');
+        // Auto-trigger lookup
+        setTimeout(() => {
+            lookupShippingLabel();
+        }, 500);
+    }
+};
+
 function handleCameraResult(event) {
-    // This is now unused since we're using live camera
-    // Keep it for compatibility
+    // Keep this for the file input fallback
     const scanBtn = document.getElementById('scanBtn');
     scanBtn.innerHTML = '📷 Scan';
     scanBtn.disabled = false;
+    
+    if (event.target.files && event.target.files[0]) {
+        showSuccess('📸 Image captured. Look for barcode detection popup from Safari.');
+    }
+    
     event.target.value = '';
 }
-
 
     </script>
 </body>
