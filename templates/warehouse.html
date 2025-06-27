@@ -1108,8 +1108,16 @@ function startLiveBarcodeScanner() {
     document.body.appendChild(scannerOverlay);
 
     const scannerContainer = scannerOverlay.querySelector('#scannerContainer');
+if (!scannerContainer) {
+    showError("Camera error: Scanner container not found");
+    scanBtn.innerHTML = '📷 Scan';
+    scanBtn.disabled = false;
+    document.body.removeChild(scannerOverlay);
+    return;
+}
 
 
+setTimeout(() => {
     Quagga.init({
         inputStream: {
             type: "LiveStream",
@@ -1132,6 +1140,7 @@ function startLiveBarcodeScanner() {
             document.body.removeChild(scannerOverlay);
             return;
         }
+
         Quagga.start();
         scanBtn.innerHTML = '📱 Point at barcode';
 
@@ -1147,6 +1156,7 @@ function startLiveBarcodeScanner() {
             }
         });
     });
+}, 300);
 
     window.closeBarcodeScanner = () => {
         Quagga.stop();
