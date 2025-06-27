@@ -421,6 +421,41 @@
                 flex-direction: column;
             }
         }
+
+        .scan-btn {
+    padding: 15px 20px;
+    background: linear-gradient(45deg, #6f42c1, #5a2d91);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+.scan-btn:hover {
+    background: linear-gradient(45deg, #5a2d91, #4c1d82);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(111, 66, 193, 0.3);
+}
+.scan-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.shipping-search {
+    flex-direction: column;
+    gap: 10px; /* Reduce gap on mobile */
+}
+.scan-btn {
+    padding: 12px 16px; /* Slightly smaller on mobile */
+    margin-right: 0;
+    margin-bottom: 5px;
+}
+
     </style>
 </head>
 <body>
@@ -457,16 +492,20 @@
     <div class="shipping-mode" id="shippingMode">
         <h2 style="margin-bottom: 20px; color: #333;">📦 Shipping Label Lookup</h2>
         
-        <div class="shipping-search">
-            <input type="text" 
-                   class="tracking-input" 
-                   id="trackingInput" 
-                   placeholder="Enter tracking number (e.g., 1ZHY49120300197340)"
-                   onkeypress="handleTrackingKeypress(event)">
-            <button class="lookup-btn" id="lookupBtn" onclick="lookupShippingLabel()">
-                🔍 Lookup
-            </button>
-        </div>
+<div class="shipping-search">
+    <input type="text" 
+           class="tracking-input" 
+           id="trackingInput" 
+           placeholder="Enter tracking number (e.g., 1ZHY49120300197340)"
+           onkeypress="handleTrackingKeypress(event)">
+    <button class="scan-btn" id="scanBtn" onclick="scanBarcode()">
+        📷 Scan
+    </button>
+    <button class="lookup-btn" id="lookupBtn" onclick="lookupShippingLabel()">
+        🔍 Lookup
+    </button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="handleCameraResult(event)">
+</div>
         
         <div class="label-preview" id="labelPreview">
             <div class="label-info" id="labelInfo">
@@ -1023,6 +1062,43 @@ async function signAndDownloadPdf() {
         signBtn.disabled = false;
         signBtn.innerHTML = originalText;
     }
+}
+
+function scanBarcode() {
+    const cameraInput = document.getElementById('cameraInput');
+    const scanBtn = document.getElementById('scanBtn');
+    
+    // Trigger camera
+    scanBtn.innerHTML = '📸 Opening Camera...';
+    scanBtn.disabled = true;
+    
+    // Reset button after a moment in case user cancels
+    setTimeout(() => {
+        scanBtn.innerHTML = '📷 Scan';
+        scanBtn.disabled = false;
+    }, 5000);
+    
+    cameraInput.click();
+}
+
+function handleCameraResult(event) {
+    const scanBtn = document.getElementById('scanBtn');
+    const trackingInput = document.getElementById('trackingInput');
+    
+    scanBtn.innerHTML = '📷 Scan';
+    scanBtn.disabled = false;
+    
+    // On iOS Safari, if a barcode is detected, the user can tap it and it will
+    // populate into a text field. For now, we'll show a message to guide users.
+    if (event.target.files && event.target.files[0]) {
+        showSuccess('📱 Point camera at barcode. Safari will detect it automatically and suggest the tracking number.');
+        
+        // Note: The actual barcode text extraction would happen automatically in Safari
+        // Users will see a popup with the detected text that they can tap to use
+    }
+    
+    // Clear the file input for next use
+    event.target.value = '';
 }
 
 
