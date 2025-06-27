@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template, url_for, send_from_directory, session, redirect
+from flask import Flask, jsonify, request, render_template, url_for, send_from_directory, session, redirect, send_file
 import requests
 import base64
 import os
@@ -10,6 +10,8 @@ import io
 import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from reportlab.pdfgen import canvas
+from pypdf import PdfReader, PdfWriter, Transformation
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1026,6 +1028,66 @@ def cleanup_files():
         })
     except Exception as e:
         return jsonify({"error": f"Cleanup failed: {str(e)}"}), 500
+
+@app.route('/api/sign-pdf', methods=['POST'])
+def sign_pdf():
+    """Sign a PDF with predefined signature positions"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+        
+        uploaded_file = request.files['file']
+        
+        if uploaded_file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        if not uploaded_file.filename.lower().endswith('.pdf'):
+            return jsonify({"error": "Only PDF files are allowed"}), 400
+        
+        # Read uploaded PDF
+        reader = PdfReader(uploaded_file)
+        first = reader.pages[0]
+        w = float(first.mediabox.width)
+        h = float(first.mediabox.height)
+        
+        # Signature positions (in inches) → points
+        spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]
+        spots_pt = [(x*72, y*72) for x, y in spots_in]
+        
+        # Build overlay
+        packet = io.BytesIO()
+        c = canvas.Canvas(packet, pagesize=(w, h))
+        c.setFont("Helvetica", 10)
+        for x, y in spots_pt:
+            c.drawString(x, y, "Tim Marker")
+        c.save()
+        packet.seek(0)
+        overlay = PdfReader(packet).pages[0]
+        
+        # Optional shift (adjust as needed)
+        shift_x = 0.25 * 28.35  # 0.25 cm in points
+        transform = Transformation().translate(tx=shift_x, ty=0)
+        
+        # Merge onto every page
+        writer = PdfWriter()
+        for page in reader.pages:
+            page.merge_page(overlay)
+            writer.add_page(page)
+        
+        # Return signed PDF
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=f"signed_{uploaded_file.filename}",
+            mimetype="application/pdf"
+        )
+        
+    except Exception as err:
+        return jsonify({"error": f"PDF signing failed: {str(err)}"}), 500
 
 if __name__ == '__main__':
     if not os.path.exists('templates'):

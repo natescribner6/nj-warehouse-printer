@@ -437,6 +437,9 @@
             <button class="mode-btn" id="shippingModeBtn" onclick="switchMode('shipping')">
                 🚚 Shipping Labels
             </button>
+            <button class="mode-btn" id="pdfSignerModeBtn" onclick="switchMode('pdfsigner')">
+    ✍️ PDF Signer
+</button>
         </div>
         
         <div class="search-box" id="productSearch">
@@ -482,6 +485,31 @@
             </div>
         </div>
     </div>
+
+    <!-- PDF Signer Mode -->
+<div class="shipping-mode" id="pdfSignerMode">
+<h2 style="margin-bottom: 20px; color: #333;">✍️ PDF Document Signer</h2>
+<p style="margin-bottom: 20px; color: #666; font-style: italic; text-align: center;">Automatically adds signature to OP-900 Laser File (red sticker paper for hazmats)</p>    
+    <div class="shipping-search">
+        <div id="dropZone" style="border: 2px dashed #ccc; border-radius: 10px; padding: 40px; text-align: center; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease;">
+            <p style="margin: 0; font-size: 18px; color: #666;">📄 Drag & drop a PDF here or click to select</p>
+            <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+        </div>
+    </div>
+    
+    <div class="label-preview" id="pdfPreview">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="color: #333; margin-bottom: 10px;">Selected PDF:</h4>
+            <p id="selectedFileName" style="font-weight: 500; color: #007bff;"></p>
+        </div>
+        
+        <div class="print-shipping">
+            <button class="print-shipping-btn" id="signPdfBtn" onclick="signAndDownloadPdf()">
+                ✍️ Sign & Download PDF
+            </button>
+        </div>
+    </div>
+</div>
     
     <div class="error-message" id="errorMessage"></div>
     <div class="success-message" id="successMessage"></div>
@@ -522,39 +550,53 @@
             });
         }
 
-        function switchMode(mode) {
-            currentMode = mode;
-            
-            // Update button states
-            document.getElementById('productModeBtn').classList.toggle('active', mode === 'product');
-            document.getElementById('shippingModeBtn').classList.toggle('active', mode === 'shipping');
-            
-            // Update header
-            const headerDesc = document.getElementById('headerDescription');
-            
-            if (mode === 'product') {
-                // Show product interface
-                document.getElementById('productSearch').style.display = 'block';
-                document.getElementById('categoryFilter').style.display = 'flex';
-                document.getElementById('productsGrid').classList.remove('hidden');
-                document.getElementById('shippingMode').classList.remove('active');
-                document.getElementById('noProducts').style.display = allProducts.length === 0 ? 'block' : 'none';
-                headerDesc.textContent = 'Click to print labels and documents';
-            } else {
-                // Show shipping interface
-                document.getElementById('productSearch').style.display = 'none';
-                document.getElementById('categoryFilter').style.display = 'none';
-                document.getElementById('productsGrid').classList.add('hidden');
-                document.getElementById('shippingMode').classList.add('active');
-                document.getElementById('noProducts').style.display = 'none';
-                headerDesc.textContent = 'Enter tracking number to lookup and print shipping labels';
-                
-                // Focus on tracking input
-                setTimeout(() => {
-                    document.getElementById('trackingInput').focus();
-                }, 100);
-            }
-        }
+function switchMode(mode) {
+    currentMode = mode;
+    
+    // Update button states
+    document.getElementById('productModeBtn').classList.toggle('active', mode === 'product');
+    document.getElementById('shippingModeBtn').classList.toggle('active', mode === 'shipping');
+    document.getElementById('pdfSignerModeBtn').classList.toggle('active', mode === 'pdfsigner');
+    
+    // Update header
+    const headerDesc = document.getElementById('headerDescription');
+    
+    if (mode === 'product') {
+        // Show product interface
+        document.getElementById('productSearch').style.display = 'block';
+        document.getElementById('categoryFilter').style.display = 'flex';
+        document.getElementById('productsGrid').classList.remove('hidden');
+        document.getElementById('shippingMode').classList.remove('active');
+        document.getElementById('pdfSignerMode').classList.remove('active');
+        document.getElementById('noProducts').style.display = allProducts.length === 0 ? 'block' : 'none';
+        headerDesc.textContent = 'Click to print labels and documents';
+    } else if (mode === 'shipping') {
+        // Show shipping interface
+        document.getElementById('productSearch').style.display = 'none';
+        document.getElementById('categoryFilter').style.display = 'none';
+        document.getElementById('productsGrid').classList.add('hidden');
+        document.getElementById('shippingMode').classList.add('active');
+        document.getElementById('pdfSignerMode').classList.remove('active');
+        document.getElementById('noProducts').style.display = 'none';
+        headerDesc.textContent = 'Enter tracking number to lookup and print shipping labels';
+        
+        // Focus on tracking input
+        setTimeout(() => {
+            document.getElementById('trackingInput').focus();
+        }, 100);
+    } else if (mode === 'pdfsigner') {
+        // Show PDF signer interface
+        document.getElementById('productSearch').style.display = 'none';
+        document.getElementById('categoryFilter').style.display = 'none';
+        document.getElementById('productsGrid').classList.add('hidden');
+        document.getElementById('shippingMode').classList.remove('active');
+        document.getElementById('pdfSignerMode').classList.add('active');
+        document.getElementById('noProducts').style.display = 'none';
+        headerDesc.textContent = 'Upload PDF documents to add signature';
+        
+        setupPdfSigner();
+    }
+}
 
         function handleTrackingKeypress(event) {
             if (event.key === 'Enter') {
@@ -879,6 +921,111 @@
                 loadProducts();
             }
         }, 30000);
+
+
+        let selectedPdfFile = null;
+
+function setupPdfSigner() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('pdfFileInput');
+    
+    // Click to select file
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    // Drag and drop events
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#007bff';
+        dropZone.style.backgroundColor = '#e3f2fd';
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.backgroundColor = '#f8f9fa';
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.backgroundColor = '#f8f9fa';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            handlePdfSelection(files[0]);
+        } else {
+            showError('Please select a PDF file');
+        }
+    });
+    
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handlePdfSelection(e.target.files[0]);
+        }
+    });
+}
+
+function handlePdfSelection(file) {
+    selectedPdfFile = file;
+    document.getElementById('selectedFileName').textContent = file.name;
+    document.getElementById('pdfPreview').classList.add('show');
+    showSuccess(`PDF selected: ${file.name}`);
+}
+
+async function signAndDownloadPdf() {
+    if (!selectedPdfFile) {
+        showError('Please select a PDF file first');
+        return;
+    }
+    
+    const signBtn = document.getElementById('signPdfBtn');
+    const originalText = signBtn.innerHTML;
+    
+    try {
+        signBtn.disabled = true;
+        signBtn.innerHTML = '🔄 Signing PDF...';
+        
+        const formData = new FormData();
+        formData.append('file', selectedPdfFile);
+        
+        const response = await fetch('/api/sign-pdf', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `signed_${selectedPdfFile.name}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            
+            showSuccess('✅ PDF signed and downloaded successfully!');
+            signBtn.innerHTML = '✅ Signed!';
+            
+            setTimeout(() => {
+                signBtn.disabled = false;
+                signBtn.innerHTML = originalText;
+            }, 3000);
+        } else {
+            const error = await response.json();
+            showError(`❌ ${error.error || 'Failed to sign PDF'}`);
+            signBtn.disabled = false;
+            signBtn.innerHTML = originalText;
+        }
+    } catch (error) {
+        showError('❌ Sign failed: ' + error.message);
+        signBtn.disabled = false;
+        signBtn.innerHTML = originalText;
+    }
+}
+
+
     </script>
 </body>
 </html>
