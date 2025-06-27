@@ -22,7 +22,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 app.permanent_session_lifetime = timedelta(days=7)
 
-
+print('loading')
 
 # Configuration variables from environment
 PRINTNODE_API_KEY = os.getenv('PRINTNODE_API_KEY')
