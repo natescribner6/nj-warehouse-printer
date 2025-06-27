@@ -457,19 +457,18 @@
 }
 
 #scannerContainer {
-    position: absolute; /* not fixed, since it's already inside your overlay */
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: black;
-    z-index: 1; /* let the reticle and UI be on top */
+    z-index: 1;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
 }
-
 
 #scannerContainer video,
 #scannerContainer canvas {
@@ -480,8 +479,73 @@
     border-radius: 0;
 }
 
+/* full-screen black background */
+#scannerOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: black;
+    z-index: 9999;
+}
+
+/* make the container fill the overlay */
+#scannerOverlay #scannerContainer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+}
+
+/* video AND canvas fill the container */
+#scannerOverlay video,
+#scannerOverlay canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+/* clean reticle with dark overlay */
+#scannerOverlay .reticle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 280px; height: 120px;
+    margin: -60px 0 0 -140px;
+    border: 2px solid #00ff00;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 2;
+    box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5);
+}
+
+/* single horizontal scan line */
+#scannerOverlay .reticle::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 75%; height: 2px;
+    background: #ff0000;
+    transform: translate(-50%, -50%);
+    border-radius: 1px;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+}
+
+/* simple close button */
+#scannerOverlay .close-btn {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    font-size: 1.2em;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 3;
+}
+
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.5/dist/quagga.min.js"></script>
 
 </head>
 <body>
@@ -1108,55 +1172,63 @@ function startLiveBarcodeScanner() {
     document.body.appendChild(scannerOverlay);
 
     const scannerContainer = scannerOverlay.querySelector('#scannerContainer');
-if (!scannerContainer) {
-    showError("Camera error: Scanner container not found");
-    scanBtn.innerHTML = '📷 Scan';
-    scanBtn.disabled = false;
-    document.body.removeChild(scannerOverlay);
-    return;
-}
+    if (!scannerContainer) {
+        showError("Camera error: Scanner container not found");
+        scanBtn.innerHTML = '📷 Scan';
+        scanBtn.disabled = false;
+        document.body.removeChild(scannerOverlay);
+        return;
+    }
 
-
-setTimeout(() => {
-    Quagga.init({
-        inputStream: {
-            type: "LiveStream",
-            constraints: {
-                facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            },
-            target: scannerContainer
-        },
-        decoder: {
-            readers: ["code_128_reader", "code_39_reader", "itf_reader"]
-        },
-        locate: true
-    }, function(err) {
-        if (err) {
-            showError("Camera error: " + err.message);
-            scanBtn.innerHTML = '📷 Scan';
-            scanBtn.disabled = false;
-            document.body.removeChild(scannerOverlay);
-            return;
-        }
-
-        Quagga.start();
-        scanBtn.innerHTML = '📱 Point at barcode';
-
-        Quagga.onDetected(result => {
-            const code = result.codeResult.code;
-            if (code) {
-                const trackingInput = document.getElementById("trackingInput");
-                trackingInput.value = code;
-                showSuccess("✅ Scanned: " + code);
-                Quagga.stop();
-                closeBarcodeScanner();
-                lookupShippingLabel();
-            }
+    // ensure the overlay is fully rendered before initializing Quagga
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: scannerContainer,
+                    constraints: {
+                        facingMode: "environment",
+                        width:  { min: 640 },
+                        height: { min: 480 }
+                    }
+                },
+                locator: { patchSize: "medium", halfSample: true },
+                numOfWorkers: 2,
+                decoder: { readers: ["code_128_reader"] },
+                locate: true
+            }, function(err) {
+                if (err) {
+                    showError("Camera error: " + err.message);
+                    scanBtn.innerHTML = '📷 Scan';
+                    scanBtn.disabled = false;
+                    document.body.removeChild(scannerOverlay);
+                    return;
+                }
+                Quagga.start();
+                scanBtn.innerHTML = '📱 Point at barcode';
+                Quagga.onDetected(result => {
+                    const code = result.codeResult.code;
+                    
+                    // Filter out invalid barcodes
+                    if (code && isValidBarcode(code)) {
+                        // For 34-digit codes, use only the last 12 digits
+                        const finalCode = (code.length === 34 && /^\d+$/.test(code)) 
+                            ? code.slice(-12) 
+                            : code;
+                        
+                        document.getElementById("trackingInput").value = finalCode;
+                        showSuccess("✅ Scanned: " + finalCode);
+                        Quagga.stop();
+                        closeBarcodeScanner();
+                        lookupShippingLabel();
+                    }
+                    // Invalid barcodes are ignored silently
+                });
+            });
         });
     });
-}, 300);
 
     window.closeBarcodeScanner = () => {
         Quagga.stop();
@@ -1166,41 +1238,31 @@ setTimeout(() => {
     };
 }
 
-function createScannerOverlay() {
-    const overlay = document.createElement('div');
-    overlay.innerHTML = `
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 9999; display: flex; flex-direction: column;">
-            <!-- Header -->
-            <div style="background: rgba(0,0,0,0.8); color: white; padding: 15px; text-align: center; position: relative;">
-                <h3 style="margin: 0; font-size: 18px;">📱 Barcode Scanner</h3>
-                <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Point camera at tracking number barcode</p>
-                <button onclick="closeBarcodeScanner()" style="position: absolute; right: 15px; top: 15px; background: #dc3545; color: white; border: none; border-radius: 20px; width: 35px; height: 35px; font-size: 18px; cursor: pointer;">✕</button>
-            </div>
-            
-            <!-- Camera View -->
-            <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center;">
-                <div id="scannerContainer" style="width: 100%; height: 100%; position: relative;"></div>
-
-                
-                <!-- Scanning Reticle -->
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; height: 100px; border: 2px solid #00ff00; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);"></div>
-                
-                <!-- Instructions -->
-                <div style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 15px 25px; border-radius: 25px; text-align: center; max-width: 90%;">
-                    <p style="margin: 0; font-size: 16px; font-weight: 500;">📦 Position barcode in the green frame</p>
-                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Safari will automatically detect and highlight the code</p>
-                </div>
-            </div>
-            
-            <!-- Manual Input Option -->
-            <div style="background: rgba(0,0,0,0.8); padding: 20px; text-align: center;">
-                <input type="text" id="manualTrackingInput" placeholder="Or type tracking number manually..." style="width: 70%; padding: 12px; border: none; border-radius: 25px; font-size: 16px; text-align: center; margin-right: 10px;">
-                <button onclick="useManualInput()" style="padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer;">Use</button>
-            </div>
-        </div>
-    `;
-    return overlay;
+function isValidBarcode(code) {
+    // Check if starts with specific prefixes
+    if (code.startsWith("1ZHY4912") || code.startsWith("1ZH965")) {
+        return true;
+    }
+    
+    // Check if it's exactly 34 digits, only numeric
+    if (code.length === 34 && /^\d+$/.test(code)) {
+        return true;
+    }
+    
+    return false;
 }
+
+function createScannerOverlay() {
+  const overlay = document.createElement('div');
+  overlay.id = 'scannerOverlay';
+  overlay.innerHTML = `
+    <button class="close-btn" onclick="closeBarcodeScanner()">✕</button>
+    <div id="scannerContainer"></div>
+    <div class="reticle"></div>
+  `;
+  return overlay;
+}
+
 
 // Function to handle manual input
 window.useManualInput = function() {
