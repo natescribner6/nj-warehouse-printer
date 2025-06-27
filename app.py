@@ -90,12 +90,12 @@ def is_whitelisted_device():
     """Check if current device is in the whitelist"""
     device_id = get_device_fingerprint()
     
-    whitelisted_devices = [
-        "324503b48f1da98c2c0d19cb3f41364e"
-        # Add your device fingerprints here after seeing them in logs
-        # 'abc123def456789...',  # Nate's iPhone
-        # 'xyz789abc123456...',  # Nate's laptop
-    ]
+    # Get whitelisted devices from environment variable
+    whitelist_env = os.getenv('WHITELISTED_DEVICES', '')
+    whitelisted_devices = [device.strip() for device in whitelist_env.split(',') if device.strip()]
+    
+    print(f"🔍 Checking device: {device_id}")
+    print(f"📋 Whitelist: {whitelisted_devices}")
     
     return device_id in whitelisted_devices
 
