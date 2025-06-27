@@ -31,7 +31,7 @@ STICKER_PRINTER_ID = int(os.getenv('STICKER_PRINTER_ID', 74471602))
 # Flask Configuration
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
-FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
+FLASK_PORT = int(os.getenv('FLASK_PORT', 8080))
 
 # Validate required environment variables
 if not PRINTNODE_API_KEY:
