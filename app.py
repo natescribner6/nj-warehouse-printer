@@ -235,7 +235,7 @@ def save_print_config(config):
     except Exception as e:
         print(f"Error saving config: {e}")
         return False
-
+#new
 def generate_pdf_thumbnail(pdf_path, output_path):
     """Generate a thumbnail image from the first page of a PDF"""
     try:
@@ -1297,6 +1297,39 @@ def whats_this_interface():
         return redirect('/ops')
     return render_template('whats_this.html')
 
+#orders_route
+@app.route('/api/06611904-26f5-4d21-bf72-3cb888359b84', methods=['GET', 'POST', 'PUT', 'PATCH'])
+def orders_route():
+    print("=== INCOMING REQUEST ===")
+    print(f"Method: {request.method}")
+    print(f"Headers: {dict(request.headers)}")
+    
+    # Log the raw data
+    print(f"Raw data: {request.get_data()}")
+    
+    # Try to get JSON payload
+    try:
+        json_data = request.get_json()
+        print(f"JSON payload: {json_data}")
+    except:
+        print("No JSON payload or invalid JSON")
+    
+    # Log form data if any
+    if request.form:
+        print(f"Form data: {dict(request.form)}")
+    
+    # Log query parameters
+    if request.args:
+        print(f"Query params: {dict(request.args)}")
+    
+    print("=== END REQUEST ===")
+    
+    return jsonify({
+        "status": "received",
+        "method": request.method,
+        "data_received": True
+    })
+    
 #shipstation v1 routes
 @app.route('/api/shipment/<tracking_number>')
 def get_shipment_info(tracking_number):
@@ -1441,10 +1474,12 @@ def get_shipment_info(tracking_number):
         return jsonify({
             "error": f"An error occurred: {str(err)}"
         }), 500
-        
+       
+@app.route('/testing')
+def testing():
+    return render_template('testing.html') 
         
 if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')
-    #app.run(host="0.0.0.0", port=5000, debug=True)
     app.run(host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)

@@ -63,36 +63,6 @@
       "paper_size": ""
     },
     {
-      "id": "spaluxe old back label",
-      "name": "spaluxe oxidizing back label (OLD)",
-      "description": "spaluxe oxidizing back label (OLD)",
-      "pdf_file": "add005954c6d41cf9b1ccecf3d617db3.pdf",
-      "image": "daf198d16faf4b90b5a8d2fec3742527.jpg",
-      "printer_id": 74471601,
-      "category": "General",
-      "paper_size": "5 x 7"
-    },
-    {
-      "id": "spaluxe-5lb-oxidizing",
-      "name": "spaluxe oxidizing 5lb (FRONT)",
-      "description": "5lb oxidizing (FRONT)",
-      "pdf_file": "da52ebd62a414fd0ad7d7f5b0b88beae.pdf",
-      "image": "c17e865a713f4763b6624159e79438e1.jpg",
-      "printer_id": 74471601,
-      "category": "General",
-      "paper_size": "5 x 7"
-    },
-    {
-      "id": "spaluxe-oxidizing-front-10lb",
-      "name": "spaluxe oxidizing shock (10lb, front)",
-      "description": "spaluxe oxidizing shock, 10lb, front",
-      "pdf_file": "7b6b51a781c14c2cbf64ee0e2e21c3bd.pdf",
-      "image": "ebdee2304e97426cb8a09df41ae1ecef.jpg",
-      "printer_id": 74471601,
-      "category": "General",
-      "paper_size": "5 x 7"
-    },
-    {
       "id": "pooluxe-de-30lb",
       "name": "pooluxe de 30lb",
       "description": "pooluxe de 30lb",
@@ -263,16 +233,6 @@
       "paper_size": "5 x 7"
     },
     {
-      "id": "pooluxe oxidizing 25lb",
-      "name": "pooluxe oxi 25lb",
-      "description": "pooluxe oxidizing 25lb",
-      "pdf_file": "d0dd2c743e98420eaab3ee535fdd414b.pdf",
-      "image": "305e479e4960438fb235bc4fe6cb658f.jpg",
-      "printer_id": 74471601,
-      "category": "General",
-      "paper_size": "6.5 x 10"
-    },
-    {
       "id": "pooluxe calcium 30lb",
       "name": "pooluxe calcium 30lb",
       "description": "pooluxe calcium 30lb",
@@ -311,16 +271,6 @@
       "printer_id": 74471601,
       "category": "General",
       "paper_size": "5 x 7"
-    },
-    {
-      "id": "45lb old pooluxe oxidizing shock",
-      "name": "45lb old pooluxe oxidizing shock",
-      "description": "45lb old pooluxe oxidizing shock",
-      "pdf_file": "8a3cfa0b2ed7492b9160c0e96268992b.pdf",
-      "image": "201ca3ec9c514a46861f78912fed57c9.jpg",
-      "printer_id": 74471601,
-      "category": "General",
-      "paper_size": "6.5 x 10"
     },
     {
       "id": "conditioner old 15lb",
@@ -408,6 +358,46 @@
       "description": "new 25lb oxidizing shock",
       "pdf_file": "899e6717b278449b91eb7e41704f31bb.pdf",
       "image": "0713807ed50443ebb118f45e19d3c2fb.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "chlorine-remover-25lb",
+      "name": "chlorine-remover-25lb",
+      "description": "chlorine-remover-25lb",
+      "pdf_file": "c8a727aa483e4a0a809580a916a52fbf.pdf",
+      "image": "d0fcb5d894d64cd99f1f636d3820ef7f.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "30lb-conditioner-v2",
+      "name": "30lb conditioner v2",
+      "description": "30lb conditioner v2",
+      "pdf_file": "1e9a11927a454394a23663a196b7cd51.pdf",
+      "image": "7527ed4dd7eb484d90b60d527648d4dc.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "alk increaser 25lb NEW",
+      "name": "alk increaser 25lb NEW",
+      "description": "alk increaser 25lb NEW",
+      "pdf_file": "7d84d0870a9c4dc483d69310e3b6d820.pdf",
+      "image": "0fb37eb69fde4389abebfab26eeef462.jpg",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "ph reducer v2 30lb",
+      "name": "ph reducer v2 30lb",
+      "description": "ph reducer v2 30lb",
+      "pdf_file": "84b06b73682d4ff6935c2a4c5bb98075.pdf",
+      "image": "f9f11866a768426a9e696ded7b609ad9.jpg",
       "printer_id": 74471601,
       "category": "General",
       "paper_size": "6.5 x 10"
