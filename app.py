@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from reportlab.pdfgen import canvas
 from pypdf import PdfReader, PdfWriter, Transformation
 import hashlib
+import psycopg2
 
 
 # Load environment variables from .env file
@@ -1298,37 +1299,71 @@ def whats_this_interface():
     return render_template('whats_this.html')
 
 #orders_route
-@app.route('/api/06611904-26f5-4d21-bf72-3cb888359b84', methods=['GET', 'POST', 'PUT', 'PATCH'])
+
+@app.route('/api/06611904-26f5-4d21-bf72-3cb888359b84', methods=['POST'])
 def orders_route():
-    print("=== INCOMING REQUEST ===")
-    print(f"Method: {request.method}")
-    print(f"Headers: {dict(request.headers)}")
+    print("=== INCOMING SHIPSTATION WEBHOOK ===")
     
-    # Log the raw data
-    print(f"Raw data: {request.get_data()}")
-    
-    # Try to get JSON payload
     try:
-        json_data = request.get_json()
-        print(f"JSON payload: {json_data}")
-    except:
-        print("No JSON payload or invalid JSON")
-    
-    # Log form data if any
-    if request.form:
-        print(f"Form data: {dict(request.form)}")
-    
-    # Log query parameters
-    if request.args:
-        print(f"Query params: {dict(request.args)}")
-    
-    print("=== END REQUEST ===")
-    
-    return jsonify({
-        "status": "received",
-        "method": request.method,
-        "data_received": True
-    })
+        # Get the webhook payload
+        webhook_data = request.get_json()
+        resource_url = webhook_data.get('resource_url')
+        
+        if not resource_url:
+            return jsonify({"error": "No resource_url in webhook"}), 400
+        
+        print(f"Fetching orders from: {resource_url}")
+        
+        # Fetch the actual order data from ShipStation
+        headers = {
+            'content-type': 'application/json',
+            'Authorization': f"Basic {os.getenv('SHIPSTATION_V1_API_KEY')}"
+        }
+        response = requests.get(resource_url, headers=headers)
+        orders_data = response.json()
+        
+        print(f"Got {orders_data.get('total', 0)} orders")
+        
+        # Connect to PostgreSQL
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            port=os.getenv('DB_PORT', 5432),
+            database=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            sslmode='require'
+        )
+        cursor = conn.cursor()
+        
+        inserted_count = 0
+        
+        # Insert each order as a separate row
+        for order in orders_data.get('orders', []):
+            try:
+                cursor.execute(
+                    "INSERT INTO shipstation_orders_raw (payload) VALUES (%s)",
+                    (json.dumps(order),)
+                )
+                inserted_count += 1
+                print(f"Inserted order {order.get('orderNumber', 'unknown')}")
+            except Exception as e:
+                print(f"Error inserting order {order.get('orderNumber', 'unknown')}: {e}")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"Successfully inserted {inserted_count} orders")
+        
+        return jsonify({
+            "status": "success",
+            "orders_processed": inserted_count,
+            "total_orders": orders_data.get('total', 0)
+        })
+        
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({"error": str(e)}), 500
     
 #shipstation v1 routes
 @app.route('/api/shipment/<tracking_number>')
