@@ -1365,6 +1365,139 @@ def orders_route():
         print(f"Error processing webhook: {e}")
         return jsonify({"error": str(e)}), 500
     
+#shipm,ents route (v1)
+@app.route('/api/40be2d89-d69d-44eb-954f-f099d0138082', methods=['POST'])
+def shipments_route():
+    print("=== INCOMING SHIPSTATION WEBHOOK ===")
+    
+    try:
+        # Get the webhook payload
+        webhook_data = request.get_json()
+        resource_url = webhook_data.get('resource_url')
+        
+        if not resource_url:
+            return jsonify({"error": "No resource_url in webhook"}), 400
+        
+        print(f"Fetching orders from: {resource_url}")
+        
+        # Fetch the actual order data from ShipStation
+        headers = {
+            'content-type': 'application/json',
+            'Authorization': f"Basic {os.getenv('SHIPSTATION_V1_API_KEY')}"
+        }
+        response = requests.get(resource_url, headers=headers)
+        orders_data = response.json()
+        
+        print(f"Got {orders_data.get('total', 0)} orders")
+        
+        # Connect to PostgreSQL
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            port=os.getenv('DB_PORT', 5432),
+            database=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            sslmode='require'
+        )
+        cursor = conn.cursor()
+        
+        inserted_count = 0
+        
+        # Insert each order as a separate row
+        for order in orders_data.get('shipments', []):
+            try:
+                cursor.execute(
+                    "INSERT INTO shipstation_shipments_raw (payload) VALUES (%s)",
+                    (json.dumps(order),)
+                )
+                inserted_count += 1
+                print(f"Inserted order {order.get('orderNumber', 'unknown')}")
+            except Exception as e:
+                print(f"Error inserting order {order.get('orderNumber', 'unknown')}: {e}")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"Successfully inserted {inserted_count} orders")
+        
+        return jsonify({
+            "status": "success",
+            "orders_processed": inserted_count,
+            "total_orders": orders_data.get('total', 0)
+        })
+        
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({"error": str(e)}), 500
+        
+ #fulfillments route (v1)
+@app.route('/api/dff0863d-5302-4ecd-a9ad-baabf68e8546', methods=['POST'])
+def fulfillments_route():
+    print("=== INCOMING SHIPSTATION WEBHOOK ===")
+    
+    try:
+        # Get the webhook payload
+        webhook_data = request.get_json()
+        resource_url = webhook_data.get('resource_url')
+        
+        if not resource_url:
+            return jsonify({"error": "No resource_url in webhook"}), 400
+        
+        print(f"Fetching orders from: {resource_url}")
+        
+        # Fetch the actual order data from ShipStation
+        headers = {
+            'content-type': 'application/json',
+            'Authorization': f"Basic {os.getenv('SHIPSTATION_V1_API_KEY')}"
+        }
+        response = requests.get(resource_url, headers=headers)
+        orders_data = response.json()
+        
+        print(f"Got {orders_data.get('total', 0)} orders")
+        
+        # Connect to PostgreSQL
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            port=os.getenv('DB_PORT', 5432),
+            database=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            sslmode='require'
+        )
+        cursor = conn.cursor()
+        
+        inserted_count = 0
+        
+        # Insert each order as a separate row
+        for order in orders_data.get('fulfillments', []):
+            try:
+                cursor.execute(
+                    "INSERT INTO shipstation_shipments_raw (payload, type) VALUES (%s, %s)",
+                    (json.dumps(order), "f")
+                )
+                inserted_count += 1
+                print(f"Inserted order {order.get('orderNumber', 'unknown')}")
+            except Exception as e:
+                print(f"Error inserting order {order.get('orderNumber', 'unknown')}: {e}")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"Successfully inserted {inserted_count} orders")
+        
+        return jsonify({
+            "status": "success",
+            "orders_processed": inserted_count,
+            "total_orders": orders_data.get('total', 0)
+        })
+        
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({"error": str(e)}), 500
+    
+       
 #shipstation v1 routes
 @app.route('/api/shipment/<tracking_number>')
 def get_shipment_info(tracking_number):
