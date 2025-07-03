@@ -1,14 +1,15 @@
 # routes/gmail_bp.py
 from flask import Blueprint, request, redirect, jsonify
 from gmail_service import get_gmail_service, get_gmail_auth_url, fetch_gmail_token, list_gmail_messages
+import logging
 
 gmail_bp = Blueprint('gmail', __name__)
+logger = logging.getLogger(__name__)  # module‐level logger
 
 @gmail_bp.route('/authorize')
 def gmail_auth():
     auth_url = get_gmail_auth_url()
-    # DEBUG: print or log the auth_url
-    print(f"🔍 Google auth_url: {auth_url}", flush=True)
+    logger.debug(f"🔍 Google auth_url: {auth_url}")
     return redirect(auth_url)
 
 @gmail_bp.route('/oauth2callback')
