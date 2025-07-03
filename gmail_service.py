@@ -20,7 +20,7 @@ CLIENT_CONFIG = {
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [       # for local dev
-            "https://nates.site/oauth2callback"          # your production redirect
+            "https://nates.site/authorize"          # your production redirect
         ]
     }
 }
