@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Required</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .nav_v1_container {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav_v1_wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .nav_v1_title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .nav_v1_grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav_v1_card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: #6c757d;
+            display: block;
+            cursor: not-allowed;
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .nav_v1_card::before {
+            content: '🔒';
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+
+        .nav_v1_card_title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #6c757d;
+        }
+
+        .nav_v1_card_desc {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .nav_v1_login {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .nav_v1_login_btn {
+            background: #28a745;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+            display: inline-block;
+        }
+
+        .nav_v1_login_btn:hover {
+            background: #218838;
+        }
+
+        .nav_v1_content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            text-align: center;
+        }
+
+        .nav_v1_auth_message {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav_v1_auth_message h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .nav_v1_auth_message p {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav_v1_grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav_v1_wrapper {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav_v1_container">
+        <div class="nav_v1_wrapper">
+            <h1 class="nav_v1_title">Dashboard</h1>
+            
+            <div class="nav_v1_grid">
+                <div class="nav_v1_card">
+                    <div class="nav_v1_card_title">Hazmat Shipping</div>
+                    <div class="nav_v1_card_desc">Format hazmat orders for upload</div>
+                </div>
+                
+                <div class="nav_v1_card">
+                    <div class="nav_v1_card_title">Hazmat Manager</div>
+                    <div class="nav_v1_card_desc">Mark hazmat orders as shipped</div>
+                </div>
+                
+                <div class="nav_v1_card">
+                    <div class="nav_v1_card_title">Search Orders</div>
+                    <div class="nav_v1_card_desc">Search any order</div>
+                </div>
+                
+                <div class="nav_v1_card">
+                    <div class="nav_v1_card_title">Website CS</div>
+                    <div class="nav_v1_card_desc">Website orders/customer service</div>
+                </div>
+            </div>
+            
+            <div class="nav_v1_login">
+                <a href="/login" class="nav_v1_login_btn">Login with Google</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="nav_v1_content">
+        <div class="nav_v1_auth_message">
+            <h2>Authentication Required</h2>
+            <p>Please log in with your Google account to access the dashboard tools.</p>
+            <a href="/login" class="nav_v1_login_btn">Login with Google</a>
+        </div>
+    </main>
+</body>
+</html>

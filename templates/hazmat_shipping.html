@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hazmat Orders → FedEx CSV</title>
+  <!-- Handsontable CSS -->
+  <link 
+    rel="stylesheet" 
+    href="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.css" 
+  />
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    .config { margin-bottom: 1rem; }
+    .config label { display: inline-block; width: 120px; }
+    .config select { width: 300px; margin-right: 1rem; }
+    #export-btn { margin-top: 10px; }
+
+    .nav_v1_header_wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .nav_v1_header_links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .nav_v1_header_link {
+        text-decoration: none;
+        color: #495057;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .nav_v1_header_link:hover {
+        background: #f8f9fa;
+        color: #007bff;
+    }
+
+    .nav_v1_header_link.active {
+        background: #007bff;
+        color: white;
+    }
+
+    .nav_v1_header_logout {
+        background: #dc3545;
+        color: white !important;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .nav_v1_header_logout:hover {
+        background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+        .nav_v1_header_wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .nav_v1_header_links {
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .nav_v1_header_link {
+            font-size: 0.8rem;
+        }
+    }
+
+  </style>
+</head>
+<body>
+
+<nav class="nav_v1_header">
+    <div class="nav_v1_header_wrapper">
+        <div class="nav_v1_header_links">
+            <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
+            <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
+            <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
+            <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
+        </div>
+        <a href="/logout" class="nav_v1_header_logout">Logout</a>
+    </div>
+</nav>
+  <h1>Hazmat ShipStation Orders</h1>
+  <div class="config">
+    <label>Sender Address:</label>
+    <select id="addressSelect">
+      <option value="williamstown">Williamstown, NJ (Default)</option>
+      <option value="colorado">Englewood, CO</option>
+    </select>
+  </div>
+
+  <div id="hot-container"></div>
+  <button id="export-btn">Export FedEx CSV</button>
+
+  <!-- moment.js for timestamp -->
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
+  <!-- Handsontable JS -->
+  <script 
+    src="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.js">
+  </script>
+  <script>
+    // === CONFIG ===
+    const tagId     = 30829;
+    const warehouseMap = {
+      248943: 'jersey',
+      248944: 'colorado'
+    };
+
+    // Address configurations
+    const addresses = {
+      williamstown: {
+        senderContactName: 'Tim Marker',
+        senderLine1: '1041 GLASSBORO ROAD',
+        senderLine2: 'STE A3',
+        senderPostcode: '08094',
+        senderCity: 'WILLIAMSTOWN',
+        senderState: 'NJ'
+      },
+      colorado: {
+        senderContactName: 'Tim Marker / CHRIS QUEZADA',
+        senderLine1: '2879 S SANTA FE DRIVE',
+        senderLine2: 'UNIT A',
+        senderPostcode: '80110',
+        senderCity: 'ENGLEWOOD',
+        senderState: 'CO'
+      }
+    };
+    // ==============
+    
+    let lastSelected = null;
+    let tableData = [];
+    let hot;
+
+    function getCurrentAddress() {
+      const selectedValue = document.getElementById('addressSelect').value;
+      return addresses[selectedValue];
+    }
+
+    function parsePhoneNumber(phoneRaw) {
+      if (!phoneRaw) return { number: '', extension: '' };
+      
+      // Check for extension first
+      const extMatch = phoneRaw.match(/(.+?)\s*(?:ext\.?|extension|x)\s*(\d+)/i);
+      if (extMatch) {
+        const basePhone = extMatch[1];
+        const extension = extMatch[2];
+        const cleanPhone = basePhone.replace(/\D/g, '').replace(/^1/, '');
+        return { number: cleanPhone, extension: extension };
+      }
+      
+      // No extension found, just clean the number
+      const cleanPhone = phoneRaw.replace(/\D/g, '').replace(/^1/, '');
+      return { number: cleanPhone, extension: '' };
+    }
+
+    function convertOrdersToFedExCSV(orders) {
+      const headers = [
+        "serviceType","shipmentType",
+        "senderContactName","senderCompany","senderContactNumber",
+        "senderLine1","senderLine2","senderPostcode","senderCity",
+        "senderState","senderCountry","senderEmail",
+        "recipientContactName","recipientContactNumber","recipientPhoneExtension",
+        "recipientLine1","recipientPostcode",
+        "recipientCity","recipientState","recipientCountry",
+        "recipientEmail","numberOfPackages",
+        "packageWeight","weightUnits",
+        "length","width","height",
+        "packageType","currencyType","reference"
+      ];
+      headers.push("poNumber", "invoiceNumber")
+      let csv = headers.join(",") + "\n";
+
+      const senderContactNum = '6096667263';
+      const senderCountry = 'US';
+      const senderEmail = 'sales@ezpools.com';
+      const shipmentType = 'OUTBOUND';
+      const packageType = 'YOUR_PACKAGING';
+      const currencyType = 'USD';
+
+      const currentAddress = getCurrentAddress();
+      const senderCompany  = `EZ POOLS LLC - ${currentAddress.senderState}`;
+
+      orders.forEach(o => {
+        const s = o.shipTo;
+        const weightLbs = Math.ceil(o.weight.value / 16);
+        const phoneInfo = parsePhoneNumber(s.phone);
+
+        const row = [
+          o.serviceCode.toUpperCase(),
+          shipmentType,
+          currentAddress.senderContactName,
+          senderCompany,
+          senderContactNum,
+          currentAddress.senderLine1,
+          currentAddress.senderLine2,
+          currentAddress.senderPostcode,
+          currentAddress.senderCity,
+          currentAddress.senderState,
+          senderCountry,
+          senderEmail,
+          s.name,
+          phoneInfo.number,
+          phoneInfo.extension,
+          s.street1,
+          s.postalCode.replace("-",""),
+          s.city,
+          s.state,
+          s.country,
+          o.customerEmail,
+          "1",
+          weightLbs,
+          "LBS",
+          o.dimensions.length,
+          o.dimensions.width,
+          o.dimensions.height,
+          packageType,
+          currencyType,
+          o.reference || "",
+          o.orderNumber || "",
+          o.orderId || ""
+        ];
+        csv += row.join(",") + "\n";
+      });
+
+      return csv;
+    }
+
+  async function loadOrders() {
+  const res = await fetch(`/hazmat/orders?tagId=${tagId}`, {
+    credentials: 'same-origin'  // so your login cookie is sent
+  });
+  if (!res.ok) {
+    console.error('Fetch error', res.status, await res.text());
+    return;
+  }
+    const orders = await res.json();
+
+    const now = Date.now();
+
+    // helper to decide the reference value
+    function getAutoReference(itemSkus) {
+      // look for any SKU that includes "CHAMPION"
+      if (itemSkus.some(sku => /champion/i.test(sku))) {
+        return 'CHAMPION';
+      }
+      // then look for any SKU that includes "REFRESH"
+      if (itemSkus.some(sku => /refresh/i.test(sku))) {
+        return 'REFRESH';
+      }
+      // then the exact code 71266
+      if (itemSkus.includes('71266')) {
+        return 'GLB AQUA SILK';
+      }
+      return '';
+    }
+
+    tableData = orders.map(o => {
+      // build your items string, but also extract the raw SKUs array
+      const skus = o.items.map(i => i.sku);
+      return {
+        select: false,
+        warehouse: warehouseMap[o.advancedOptions.warehouseId] || o.advancedOptions.warehouseId,
+        shipmentAge: Math.ceil((now - new Date(o.createDate).getTime()) / (1000*60*60)),
+        items: skus.join(', '),
+        state: o.shipTo.state,
+        customer: o.shipTo.name,
+        // ← auto-populate based on our rules
+        reference: getAutoReference(skus),
+        raw: o
+      };
+    });
+
+    hot = new Handsontable(document.getElementById('hot-container'), {
+      data: tableData,
+      colHeaders: ['Select','Warehouse','Shipment Age','Items','State','Customer','Reference'],
+      columns: [
+        { data: 'select', type: 'checkbox', width: 60 },
+        { data: 'warehouse' },
+        { data: 'shipmentAge', type: 'numeric', width: 100 },
+        { data: 'items', width: 300 },
+        { data: 'state' },
+        { data: 'customer', width: 150 },
+        { data: 'reference', editor: 'text', width: 120 }
+      ],
+      width: '100%',
+      height: 500,
+      stretchH: 'all',
+      rowHeaders: true,
+      licenseKey: 'non-commercial-and-evaluation',
+      dropdownMenu: true,
+      columnSorting: true,
+      afterOnCellMouseDown(event, coords) {
+        if (coords.row < 0) return;
+        const r = coords.row;
+        if (event.shiftKey && lastSelected !== null) {
+          const [start, end] = [lastSelected, r].sort((a,b)=>a-b);
+          for (let i = start; i <= end; i++) tableData[i].select = true;
+        } else if (event.ctrlKey || event.metaKey) {
+          tableData[r].select = !tableData[r].select;
+          lastSelected = r;
+        } else {
+          tableData.forEach(d=>d.select=false);
+          tableData[r].select = true;
+          lastSelected = r;
+        }
+        hot.render();
+        event.preventDefault();
+      }
+    });
+  }
+
+    document.getElementById('export-btn').addEventListener('click', () => {
+      if (!hot) return;
+      const selectedOrders = tableData
+        .filter(row => row.select)
+        .map(row => {
+          row.raw.reference = row.reference;
+          return row.raw;
+        });
+
+      if (!selectedOrders.length) {
+        alert('No rows selected!');
+        return;
+      }
+
+      const csvData = convertOrdersToFedExCSV(selectedOrders);
+      const rn = moment().format("MM-DD-YYYY_HH_mm");
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `fedex_batch_${rn}.csv`;
+      link.click();
+    });
+
+    loadOrders().catch(console.error);
+  </script>
+</body>
+</html>

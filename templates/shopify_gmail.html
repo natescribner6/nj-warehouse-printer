@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Last {{n}} Shopify Orders → Gmail</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    h2 { margin-bottom: 10px; }
+    .refresh-btn { margin-bottom: 15px; }
+        .nav_v1_header_wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .nav_v1_header_links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .nav_v1_header_link {
+        text-decoration: none;
+        color: #495057;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .nav_v1_header_link:hover {
+        background: #f8f9fa;
+        color: #007bff;
+    }
+
+    .nav_v1_header_link.active {
+        background: #007bff;
+        color: white;
+    }
+
+    .nav_v1_header_logout {
+        background: #dc3545;
+        color: white !important;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .nav_v1_header_logout:hover {
+        background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+        .nav_v1_header_wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .nav_v1_header_links {
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .nav_v1_header_link {
+            font-size: 0.8rem;
+        }
+    }
+  </style>
+</head>
+<body>
+    <nav class="nav_v1_header">
+    <div class="nav_v1_header_wrapper">
+        <div class="nav_v1_header_links">
+            <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
+            <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
+            <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
+            <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
+        </div>
+        <a href="/logout" class="nav_v1_header_logout">Logout</a>
+    </div>
+</nav>
+  <h2>Messages from the {{n}} Most-Recent Shopify Orders</h2>
+  <p>Showing up to {{n}} Gmail results matching those customer emails.</p>
+  <form method="get" style="margin-bottom:15px; display: inline-block;">
+    <label for="limit-input">Limit:</label>
+    <input type="number" id="limit-input" name="limit" value="{{ n }}" min="1" max="250" style="width: 60px; margin: 0 8px;" />
+    <button type="submit">Apply</button>
+  </form>
+  <button class="refresh-btn" onclick="window.location.reload()">Refresh</button>
+  <table>
+    <thead>
+      <tr>
+        <th>From</th>
+        <th>Subject</th>
+        <th>Date Received</th>
+        <th>Snippet</th>
+        <th>msg id</th>
+        <th>Order IDS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in messages %}
+      <tr>
+        <td>{{ row.from }}</td>
+        <td>{{ row.subject }}</td>
+        <td>{{ row.date }}</td>
+        <td>{{ row.snippet }}</td>
+        <td>
+          <a href="https://mail.google.com/mail/u/0/#all/{{ row.threadId }}" target="_blank">
+            Open thread in Gmail
+          </a>
+        </td>
+        <td>
+          <a href="{{ url_for('search_page') }}?q={{ row.orderIDs }} }}" target="_blank">
+            {{ row.orderIDs }}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

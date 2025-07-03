@@ -401,6 +401,26 @@
       "printer_id": 74471601,
       "category": "General",
       "paper_size": "6.5 x 10"
+    },
+    {
+      "id": "trade-grade-muriatic",
+      "name": "muriatic-acid",
+      "description": "tradegrade acid",
+      "pdf_file": "ade09738f5284e2a823eedff9d1fadba.pdf",
+      "image": "",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x continuous"
+    },
+    {
+      "id": "caustic 30lb",
+      "name": "caustic 30lb",
+      "description": "caustic 30lb",
+      "pdf_file": "b0517b3eb05542678e06d89a7e461162.pdf",
+      "image": "",
+      "printer_id": 74471601,
+      "category": "General",
+      "paper_size": "5 x 7"
     }
   ]
 }

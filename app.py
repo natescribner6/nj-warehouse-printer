@@ -14,18 +14,83 @@ from reportlab.pdfgen import canvas
 from pypdf import PdfReader, PdfWriter, Transformation
 import hashlib
 import psycopg2
+from authlib.integrations.flask_client import OAuth
+from flask_login import (
+    LoginManager, UserMixin,
+    login_user, login_required,
+    logout_user, current_user
+)
+from functools import wraps
+from hazmat_classes import ShipStationManager
+from routes.shipstation_bp import shipstation_bp
+from routes.ups_bp         import ups_bp
+from routes.fedex_bp       import fedex_bp
+from routes.shopify_gmail_bp import shopify_gmail_bp
 
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
-
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
 
 app.permanent_session_lifetime = timedelta(days=7)
 
 print('loading')
+
+shipstation = ShipStationManager(logger=app.logger)
+
+
+def login_required_custom(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Flask-Login setup
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+
+class User(UserMixin):
+    def __init__(self, sub, email):
+        self.id = sub
+        self.email = email
+
+@login_manager.user_loader
+def load_user(user_id):
+    info = session.get("user")
+    if info and "sub" in info and "email" in info and info["sub"] == user_id:
+        return User(info["sub"], info["email"])
+    return None
+
+# OAuth setup
+oauth = OAuth(app)
+google = oauth.register(
+  name="google",
+  client_id=os.getenv("GOOGLE_CLIENT_ID"),
+  client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+  server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+  client_kwargs={
+    "scope": "openid email profile https://www.googleapis.com/auth/gmail.readonly"
+  },
+  access_token_params={
+    "access_type": "offline",
+    "prompt": "consent"
+  }
+)
+
+app.register_blueprint(shipstation_bp)   # mounts at /search
+app.register_blueprint(ups_bp)           # mounts at /ups
+app.register_blueprint(fedex_bp)         # mounts at /fedex
+app.register_blueprint(shopify_gmail_bp, url_prefix='/website-cs')
+
 
 # Configuration variables from environment
 PRINTNODE_API_KEY = os.getenv('PRINTNODE_API_KEY')
@@ -55,7 +120,7 @@ CONFIG_FILE = "print_config.json"
 
 # Available paper sizes for PrintNode API
 PAPER_SIZES = [
-    "5 x 7", "6.5 x 10", "5in x 18.75 continuous"
+    "5 x 7", "6.5 x 10", "5in x 18.75 continuous", "5 x continuous"
 ]
 
 # Create directories if they don't exist
@@ -1647,6 +1712,256 @@ def get_shipment_info(tracking_number):
 def testing():
     return render_template('testing.html') 
         
+@app.route("/login")
+def login():
+    redirect_uri = url_for("authorize", _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route("/authorize")
+def authorize():
+    try:
+        token = google.authorize_access_token()
+        userinfo = google.userinfo()
+        
+        if not userinfo or "sub" not in userinfo or "email" not in userinfo:
+            return "Authentication failed: Missing user information", 400
+        
+        session["user"] = {"sub": userinfo["sub"], "email": userinfo["email"]}
+        login_user(User(userinfo["sub"], userinfo["email"]))
+        return redirect(url_for("verified"))  # or wherever you want to redirect
+    except Exception as e:
+        return f"Authentication failed: {str(e)}", 400
+
+@app.route("/logout")
+def logout_v2():
+    logout_user()
+    session.pop("user", None)
+    return redirect(url_for("unverified"))  # or wherever
+    
+    
+@app.route('/hazmat_shipping')
+@login_required_custom
+def hazmat_shipping():
+    return render_template('hazmat_shipping.html')
+
+@app.route('/hazmat/orders')
+@login_required_custom
+def hazmat_orders():
+    tag_id = request.args.get('tagId', 30829, type=int)
+    url    = 'https://ssapi.shipstation.com/orders/listbytag'
+    headers = {
+        'Authorization': f"Basic {os.getenv('SHIPSTATION_V1_API_KEY')}"
+    }
+    params = {
+        'orderStatus': 'awaiting_shipment',
+        'tagId': tag_id
+    }
+    resp = requests.get(url, headers=headers, params=params)
+    resp.raise_for_status()
+    # return just the list of orders
+    return jsonify(resp.json().get('orders', []))
+
+@app.route('/hazmat_manager')
+@login_required_custom
+def index():
+    """Display all hazmat orders with tracking information."""
+    processed_orders = shipstation.get_processed_orders()
+    return render_template('hazmat_index.html', orders=processed_orders)
+
+
+@app.route('/mark_shipped', methods=['POST'])
+@login_required_custom
+def mark_shipped():
+    """API endpoint to mark an order as shipped."""
+    data = request.get_json()
+    order_id = data.get('orderId')
+    tracking_number = data.get('trackingNumber')
+    carrier_code = data.get('carrierCode', 'usps')
+    
+    if not order_id or not tracking_number:
+        return jsonify({'error': 'Order ID and tracking number are required'}), 400
+    
+    result = shipstation.mark_order_as_shipped(order_id, tracking_number, carrier_code)
+    
+    if result:
+        return jsonify({'success': True, 'result': result})
+    else:
+        return jsonify({'error': 'Failed to mark order as shipped'}), 500
+
+
+@app.route('/refresh_orders')
+@login_required_custom
+def refresh_orders():
+    """API endpoint to refresh the orders list."""
+    orders = shipstation.get_hazmat_orders()
+    return jsonify({'orders': orders})
+
+@app.route('/db_browser')
+def db_browser():
+    """Browse PostgreSQL database tables with order search functionality."""
+    table = request.args.get('table', 'shipstation_orders_raw')
+    page = int(request.args.get('page', 1))
+    search_order = request.args.get('search_order', '').strip()
+    per_page = 20
+    offset = (page - 1) * per_page
+    
+    # Validate table name for security
+    allowed_tables = ['shipstation_orders_raw', 'shipstation_shipments_raw']
+    if table not in allowed_tables:
+        table = 'shipstation_orders_raw'
+    
+    try:
+        # Connect to PostgreSQL
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            port=os.getenv('DB_PORT', 5432),
+            database=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            sslmode='require'
+        )
+        cursor = conn.cursor()
+        
+        # Handle order search
+        if search_order:
+            # Search for the specific order
+            cursor.execute("""
+                SELECT serial, payload, created_at 
+                FROM shipstation_orders_raw 
+                WHERE payload->>'orderNumber' = %s
+                ORDER BY created_at DESC 
+                LIMIT 1
+            """, (search_order,))
+            
+            order_record = cursor.fetchone()
+            if order_record:
+                order_payload = order_record[1]
+                
+                # Find related shipments by orderNumber
+                cursor.execute("""
+                    SELECT serial, payload, created_at 
+                    FROM shipstation_shipments_raw 
+                    WHERE payload->>'orderNumber' = %s
+                    ORDER BY created_at DESC
+                """, (search_order,))
+                
+                shipment_records = cursor.fetchall()
+                shipments = [record[1] for record in shipment_records]
+                
+                cursor.close()
+                conn.close()
+                
+                return render_template('db_browser.html',
+                                     search_order=search_order,
+                                     order_details=order_payload,
+                                     shipments=shipments,
+                                     table=table,
+                                     allowed_tables=allowed_tables)
+            else:
+                cursor.close()
+                conn.close()
+                
+                return render_template('db_browser.html',
+                                     search_order=search_order,
+                                     order_details=None,
+                                     shipments=None,
+                                     table=table,
+                                     allowed_tables=allowed_tables)
+        
+        # Regular table browsing (when not searching)
+        # Get total count
+        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+        total_count = cursor.fetchone()[0]
+        
+        # Get records with pagination
+        cursor.execute(f"""
+            SELECT serial, payload, created_at 
+            FROM {table} 
+            ORDER BY created_at DESC 
+            LIMIT %s OFFSET %s
+        """, (per_page, offset))
+        
+        records = cursor.fetchall()
+        
+        # Process records for display
+        processed_records = []
+        for record in records:
+            record_id, payload, created_at = record
+            
+            # Extract key info from payload for preview
+            if table == 'shipstation_orders_raw':
+                preview = {
+                    'orderNumber': payload.get('orderNumber', 'N/A'),
+                    'orderStatus': payload.get('orderStatus', 'N/A'),
+                    'customerEmail': payload.get('customerEmail', 'N/A'),
+                    'orderTotal': payload.get('orderTotal', 0),
+                    'orderDate': payload.get('orderDate', 'N/A')
+                }
+            else:  # shipments
+                preview = {
+                    'trackingNumber': payload.get('trackingNumber', 'N/A'),
+                    'carrierCode': payload.get('carrierCode', 'N/A'),
+                    'shipDate': payload.get('shipDate', 'N/A'),
+                    'voided': payload.get('voided', False),
+                    'shipmentCost': payload.get('shipmentCost', 0)
+                }
+            
+            processed_records.append({
+                'id': record_id,
+                'payload': payload,
+                'created_at': created_at,
+                'preview': preview
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        # Calculate pagination info
+        total_pages = (total_count + per_page - 1) // per_page
+        has_prev = page > 1
+        has_next = page < total_pages
+        
+        return render_template('db_browser.html', 
+                             records=processed_records,
+                             table=table,
+                             page=page,
+                             total_pages=total_pages,
+                             total_count=total_count,
+                             has_prev=has_prev,
+                             has_next=has_next,
+                             allowed_tables=allowed_tables,
+                             search_order=None)
+        
+    except Exception as e:
+        app.logger.error(f"Database error: {e}")
+        return render_template('db_browser.html', 
+                             error=str(e),
+                             table=table,
+                             allowed_tables=allowed_tables)
+        
+        
+@app.route('/search-page')
+@login_required_custom   # if you want only logged-in users to see it
+def search_page():
+    # assumes you have templates/search.html in your templates/ folder
+    return render_template('search.html')
+
+
+@app.route('/verified')
+@login_required_custom   # if you want only logged-in users to see it
+def verified():
+    # assumes you have templates/search.html in your templates/ folder
+    return render_template('verified_nav.html')
+
+@app.route('/unverified')
+def unverified():
+    # if the user is already logged in (and you consider that "verified"):
+    if current_user.is_authenticated:
+        return redirect(url_for('verified'))
+
+    # otherwise show the unverified page
+    return render_template('unverified_nav.html')
+
 if __name__ == '__main__':
     if not os.path.exists('templates'):
         os.makedirs('templates')

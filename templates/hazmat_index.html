@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hazmat Orders - Mark as Shipped</title>
+  <style>
+    .nav_v1_header_wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .nav_v1_header_links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .nav_v1_header_link {
+        text-decoration: none;
+        color: #495057;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .nav_v1_header_link:hover {
+        background: #f8f9fa;
+        color: #007bff;
+    }
+
+    .nav_v1_header_link.active {
+        background: #007bff;
+        color: white;
+    }
+
+    .nav_v1_header_logout {
+        background: #dc3545;
+        color: white !important;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .nav_v1_header_logout:hover {
+        background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+        .nav_v1_header_wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .nav_v1_header_links {
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .nav_v1_header_link {
+            font-size: 0.8rem;
+        }
+    }
+  </style>
+</head>
+<body>
+<nav class="nav_v1_header">
+    <div class="nav_v1_header_wrapper">
+        <div class="nav_v1_header_links">
+            <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
+            <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
+            <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
+            <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
+        </div>
+        <a href="/logout" class="nav_v1_header_logout">Logout</a>
+    </div>
+</nav>
+  <h1>Hazmat Orders - Mark as Shipped</h1>
+  <button class="btn btn-refresh" onclick="refreshOrders()">Refresh Orders</button>
+  <div id="status-message"></div>
+
+  <table id="orders-table">
+    <thead>
+      <tr>
+        <th>Order #</th><th>Order Date</th><th>Status</th><th>Ship To Name</th>
+        <th>Ship To Company</th><th>Address</th><th>City, State ZIP</th>
+        <th>Phone</th><th>Current Tracking</th><th>New Tracking #</th>
+        <th>Carrier</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for order in orders %}
+      <tr id="order-{{ order.orderId }}">
+        <td>{{ order.orderNumber }}</td>
+        <td>{{ order.orderDate[:10] if order.orderDate else 'N/A' }}</td>
+        <td>
+          <span class="status status-{{ order.orderStatus.replace('_','-') }}">
+            {{ order.orderStatus.replace('_',' ').title() }}
+          </span>
+        </td>
+        <td>{{ order.shipTo.name }}</td>
+        <td>{{ order.shipTo.company }}</td>
+        <td>
+          {{ order.shipTo.street1 }}
+          {% if order.shipTo.street2 %}<br>{{ order.shipTo.street2 }}{% endif %}
+        </td>
+        <td>{{ order.shipTo.city }}, {{ order.shipTo.state }} {{ order.shipTo.postalCode }}</td>
+        <td>{{ order.shipTo.phone }}</td>
+        <td>{{ order.trackingNumber or 'None' }}</td>
+        <td>
+          <input
+            type="text"
+            class="tracking-input"
+            id="tracking-{{ order.orderId }}"
+            placeholder="Enter tracking #"
+            value="{{ order.trackingNumber or '' }}"
+          />
+        </td>
+        <td>
+          <select class="carrier-select" id="carrier-{{ order.orderId }}">
+                        <option value="fedex">FedEx</option>
+                        <option value="usps">USPS</option>
+                        <option value="ups">UPS</option>
+                        <option value="dhl">DHL</option>
+          </select>
+        </td>
+        <td>
+          <button
+            class="btn btn-ship"
+            onclick="markAsShipped({{ order.orderId }})"
+            id="btn-{{ order.orderId }}"
+          >Mark Shipped</button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if not orders %}
+    <p>No hazmat orders found with "awaiting_shipment" status.</p>
+  {% endif %}
+
+  <script>
+  function markAsShipped(orderId) {
+    const trackingInput  = document.getElementById(`tracking-${orderId}`);
+    const carrierSelect  = document.getElementById(`carrier-${orderId}`);
+    const button         = document.getElementById(`btn-${orderId}`);
+    const statusMsg      = document.getElementById('status-message');
+
+    const trackingNumber = trackingInput.value.trim();
+    const carrierCode    = carrierSelect.value;
+
+    if (!trackingNumber) {
+      alert('Please enter a tracking number');
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Shipping...';
+    statusMsg.innerHTML = '<div class="loading">Marking order as shipped…</div>';
+
+    fetch('/mark_shipped', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ orderId, trackingNumber, carrierCode })
+    })
+    .then(r => r.json())
+    .then(json => {
+      if (json.success) {
+        statusMsg.innerHTML = `<div class="success">
+          Order ${orderId} marked as shipped successfully!
+        </div>`;
+
+        // Update UI
+        const row = document.getElementById(`order-${orderId}`);
+        row.cells[2].innerHTML = 
+          '<span class="status status-shipped">Shipped</span>';
+        button.textContent = 'Shipped ✓';
+        button.classList.remove('btn-ship');
+        button.style.backgroundColor = '#6c757d';
+
+        // disable inputs
+        trackingInput.disabled = true;
+        carrierSelect.disabled = true;
+      } else {
+        throw new Error(json.error || 'Unknown error');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      statusMsg.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      button.disabled = false;
+      button.textContent = 'Mark Shipped';
+    });
+  }
+
+  function refreshOrders() {
+    document.getElementById('status-message')
+      .innerHTML = '<div class="loading">Refreshing orders…</div>';
+    window.location.reload();
+  }
+
+  // auto-clear status message
+  setTimeout(() => {
+    document.getElementById('status-message').innerHTML = '';
+  }, 5000);
+  </script>
+</body>
+</html>

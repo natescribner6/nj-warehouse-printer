@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .nav_v1_container {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav_v1_wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .nav_v1_title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .nav_v1_grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav_v1_card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            display: block;
+        }
+
+        .nav_v1_card:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .nav_v1_card_title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .nav_v1_card_desc {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .nav_v1_logout {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .nav_v1_logout_btn {
+            background: #dc3545;
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.2s ease;
+            display: inline-block;
+        }
+
+        .nav_v1_logout_btn:hover {
+            background: #c82333;
+        }
+
+        .nav_v1_content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav_v1_grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav_v1_wrapper {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav_v1_container">
+        <div class="nav_v1_wrapper">
+            <h1 class="nav_v1_title">nate's dashboard</h1>
+            
+            <div class="nav_v1_grid">
+                <a href="/hazmat_shipping" class="nav_v1_card">
+                    <div class="nav_v1_card_title">Hazmat Shipping</div>
+                    <div class="nav_v1_card_desc">Format hazmat orders for upload</div>
+                </a>
+                
+                <a href="/hazmat_manager" class="nav_v1_card">
+                    <div class="nav_v1_card_title">Hazmat Manager</div>
+                    <div class="nav_v1_card_desc">Mark hazmat orders as shipped</div>
+                </a>
+                
+                <a href="/search-page" class="nav_v1_card">
+                    <div class="nav_v1_card_title">Search Orders</div>
+                    <div class="nav_v1_card_desc">Search any order</div>
+                </a>
+                
+                <a href="/website-cs" class="nav_v1_card">
+                    <div class="nav_v1_card_title">Website CS</div>
+                    <div class="nav_v1_card_desc">Website orders/customer service</div>
+                </a>
+
+
+                                <a href="/ops/warehouse" class="nav_v1_card">
+                    <div class="nav_v1_card_title">Warehouse Tools</div>
+                    <div class="nav_v1_card_desc">printer for epsom, etc</div>
+                </a>
+            </div>
+            
+            <div class="nav_v1_logout">
+                <a href="/logout" class="nav_v1_logout_btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="nav_v1_content">
+        <!-- Your page content goes here -->
+        <h2>welcum</h2>
+        <p>select  a tool from the navigation above to get started</p>
+    </main>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Search</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; margin-bottom: 3rem; }
+        .header h1 { font-size: 2.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; }
+        .header p { color: #64748b; font-size: 1.1rem; }
+        .search-box { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem; }
+        .search-input { width: 100%; padding: 1rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1.1rem; transition: all 0.2s; }
+        .search-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        .search-btn { margin-top: 1rem; padding: 0.75rem 2rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        .search-btn:hover { background: #2563eb; }
+        .search-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .results { margin-top: 2rem; }
+        .results-header { margin-bottom: 1.5rem; padding: 0 0.5rem; }
+        .results-count { color: #64748b; font-size: 0.9rem; }
+        .result-card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1rem; padding: 1.5rem; transition: all 0.2s; cursor: pointer; }
+        .result-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .result-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .order-number { font-size: 1.2rem; font-weight: 600; color: #0f172a; }
+        .tracking-number { color: #3b82f6; font-family: monospace; font-size: 0.9rem; background: #eff6ff; padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: auto; }
+        .tracking-status { color: #059669; font-size: 0.85rem; background: #ecfdf5; padding: 0.25rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; font-weight: 500; }
+        .tracking-status.loading { color: #64748b; background: #f1f5f9; }
+        .tracking-status.error { color: #dc2626; background: #fef2f2; }
+        .tracking-info { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; margin-left: 0.5rem; }
+        .delivery-estimate { color: #7c3aed; font-size: 0.8rem; background: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 4px; font-weight: 500; white-space: nowrap; }
+        .delivery-estimate.loading { color: #64748b; background: #f1f5f9; }
+        .delivery-estimate.error { color: #dc2626; background: #fef2f2; }
+        .result-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .detail-item { display: flex; flex-direction: column; }
+        .detail-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .detail-value { font-weight: 500; }
+        .status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; }
+        .status-voided { background: #fee2e2; color: #dc2626; }
+        .status-shipped { background: #dcfce7; color: #16a34a; }
+        .ship-to { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+        .ship-to-header { font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
+        .ship-to-address { color: #6b7280; font-size: 0.9rem; }
+        .loading { text-align: center; padding: 2rem; color: #64748b; }
+        .error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .no-results { text-align: center; padding: 3rem; color: #64748b; }
+        .items-summary { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #6b7280; }
+        .drawer { position: fixed; top:0; right:0; height:100%; width:750px; background:#fff; box-shadow:-2px 0 8px rgba(0,0,0,0.1); transform:translateX(100%); transition:transform 0.3s ease; z-index:1000; overflow-y:auto; padding:1rem; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-close { position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:2rem; cursor:pointer; }
+        .pill-container { margin: 0.5rem 0; }
+        .pill { display: inline-block; background: #eef6ff; color: #0369a1; padding: 0.65rem 1.5rem; border-radius: 9999px; font-size: 1.5rem; margin: 0 .5rem .95rem 0; }
+        .pill-delivered { background: #dcfce7; color: #166534; }
+
+        .delivery-info, .origin-info { margin: 1rem 0; font-size: 0.9rem; }
+        .origin-info strong { display: block; margin-bottom: 0.25rem; }
+            .nav_v1_header {
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 0.75rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .nav_v1_header_wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .nav_v1_header_links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .nav_v1_header_link {
+        text-decoration: none;
+        color: #495057;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .nav_v1_header_link:hover {
+        background: #f8f9fa;
+        color: #007bff;
+    }
+
+    .nav_v1_header_link.active {
+        background: #007bff;
+        color: white;
+    }
+
+    .nav_v1_header_logout {
+        background: #dc3545;
+        color: white !important;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .nav_v1_header_logout:hover {
+        background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+        .nav_v1_header_wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .nav_v1_header_links {
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .nav_v1_header_link {
+            font-size: 0.8rem;
+        }
+    }
+    </style>
+</head>
+<body>
+    <nav class="nav_v1_header">
+    <div class="nav_v1_header_wrapper">
+        <div class="nav_v1_header_links">
+            <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
+            <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
+            <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
+            <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
+        </div>
+        <a href="/logout" class="nav_v1_header_logout">Logout</a>
+    </div>
+</nav>
+    <div class="container">
+        <div class="header">
+            <h1>Order Search</h1>
+            <p>Search by order number, tracking number, or customer email</p>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="Enter order number, tracking number, or email..." autocomplete="off">
+            <button id="searchBtn" class="search-btn">Search</button>
+        </div>
+        <div id="results" class="results" style="display:none;">
+            <div class="results-header">
+                <div id="resultsCount" class="results-count"></div>
+            </div>
+            <div id="resultsList"></div>
+        </div>
+        <div id="loading" class="loading" style="display:none;">Searching orders...</div>
+        <div id="error" class="error" style="display:none;"></div>
+    </div>
+    <div id="drawer" class="drawer">
+        <button id="drawerClose" class="drawer-close">&times;</button>
+        <div id="drawerContent"></div>
+    </div>
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const results = document.getElementById('results');
+        const resultsList = document.getElementById('resultsList');
+        const resultsCount = document.getElementById('resultsCount');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const drawer = document.getElementById('drawer');
+        const drawerContent = document.getElementById('drawerContent');
+        const drawerClose = document.getElementById('drawerClose');
+
+        function hideAll() { results.style.display='none'; loading.style.display='none'; error.style.display='none'; }
+        function showError(msg) { hideAll(); error.textContent=msg; error.style.display='block'; }
+        function showLoading() { hideAll(); loading.style.display='block'; }
+        function formatCurrency(amount) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(amount); }
+        function formatDate(dateStr) { return dateStr ? new Date(dateStr).toLocaleDateString() : 'N/A'; }
+        function formatAddress(shipTo) { if(!shipTo) return 'N/A'; const parts=[shipTo.name,shipTo.company,shipTo.addressLine1,shipTo.addressLine2,`${shipTo.city}, ${shipTo.stateProvince} ${shipTo.postalCode}`,shipTo.countryCode].filter(p=>p&&p.trim()); return parts.join('<br>'); }
+
+        // Store tracking data to avoid re-fetching
+        const trackingDataCache = new Map();
+
+        // Function to fetch and display tracking status and delivery estimate
+        function fetchTrackingStatus(trackingNumber, carrierCode) {
+            const statusElement = document.getElementById(`${trackingNumber}-status`);
+            const deliveryElement = document.getElementById(`${trackingNumber}-delivery`);
+            if (!statusElement || !deliveryElement) return;
+
+            statusElement.textContent = 'Loading...';
+            statusElement.className = 'tracking-status loading';
+            deliveryElement.textContent = 'Loading...';
+            deliveryElement.className = 'delivery-estimate loading';
+
+            const endpoint = carrierCode.toUpperCase().includes('FEDEX') ? 'fedex' : 'ups';
+            
+            fetch(`/${endpoint}/track?trackingNumber=${encodeURIComponent(trackingNumber)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Store the raw data for later use in drawer
+                    trackingDataCache.set(trackingNumber, { data, endpoint, carrierCode });
+
+                    let statusText = 'Unknown';
+                    let statusClass = 'tracking-status';
+                    let deliveryText = 'N/A';
+                    let deliveryClass = 'delivery-estimate';
+
+                    if (endpoint === 'fedex') {
+                        const result = data.output?.completeTrackResults?.[0]?.trackResults?.[0];
+                        if (result?.latestStatusDetail?.description) {
+                            statusText = result.latestStatusDetail.description;
+                            const code = result.latestStatusDetail.code;
+                            if (code === 'DL') {
+                                statusClass += ' delivered';
+                            }
+                        }
+
+                        // Get FedEx delivery estimate
+                        const window = result?.estimatedDeliveryTimeWindow?.window || {};
+                        if (window.begins) {
+                            const od = new Date(window.begins);
+                            const cd = window.ends ? new Date(window.ends) : null;
+                            const oDate = `${(od.getMonth()+1).toString().padStart(2,'0')}/${od.getDate().toString().padStart(2,'0')}`;
+                            const oTime = `${od.getHours().toString().padStart(2,'0')}:${od.getMinutes().toString().padStart(2,'0')}`;
+                            
+                            if (cd) {
+                                const cTime = `${cd.getHours().toString().padStart(2,'0')}:${cd.getMinutes().toString().padStart(2,'0')}`;
+                                deliveryText = `${oDate} ${oTime}-${cTime}`;
+                            } else {
+                                deliveryText = `${oDate} ${oTime}`;
+                            }
+                        }
+                    } else {
+                        const pkg = data.trackResponse?.shipment?.[0]?.package?.[0];
+                        if (pkg?.currentStatus?.description) {
+                            statusText = pkg.currentStatus.description;
+                            const activity = pkg.activity?.[0];
+                            if (activity?.status?.type === 'D') {
+                                statusClass += ' delivered';
+                            }
+                        }
+
+                        // Get UPS delivery estimate
+                        const dd = pkg?.deliveryDate?.[0]?.date;
+                        if (dd) {
+                            const formattedDate = `${dd.slice(4,6)}/${dd.slice(6)}`;
+                            const dt = pkg.deliveryTime || {};
+                            const t = dt.startTime ?? dt.endTime ?? dt.type ?? '';
+                            const formattedTime = (t === 'EOD' || t === 'DEL') ? t : t ? `${t.slice(0,2)}:${t.slice(2,4)}` : '';
+                            deliveryText = formattedTime ? `${formattedDate} ${formattedTime}` : formattedDate;
+                        }
+                    }
+
+                    statusElement.textContent = statusText;
+                    statusElement.className = statusClass;
+                    deliveryElement.textContent = deliveryText;
+                    deliveryElement.className = deliveryClass;
+                })
+                .catch(error => {
+                    console.error('Error fetching tracking status:', error);
+                    statusElement.textContent = 'Error loading status';
+                    statusElement.className = 'tracking-status error';
+                    deliveryElement.textContent = 'Error loading delivery';
+                    deliveryElement.className = 'delivery-estimate error';
+                });
+        }
+
+        function createResultCard(sh) {
+            const statusClass = sh.voided ? 'status-voided' : 'status-shipped';
+            const statusText = sh.voided ? 'Voided' : 'Shipped';
+            const itemsSummary = sh.shipmentItems.length > 0 ? `${sh.shipmentItems.length} item${sh.shipmentItems.length>1?'s':''}` : 'No items';
+            const orderItems = sh.fulfillment ? sh.orderItems : sh.shipmentItems;
+            
+            return `
+                <div class="result-card" onclick="openDrawer('${sh.trackingNumber}', '${sh.carrierCode}')">
+                    <div class="result-header">
+                        <div class="order-number">${sh.orderNumber}</div>
+                        <div style="display: flex; align-items: flex-start;">
+                            <div class="tracking-number">${sh.trackingNumber}</div>
+                            <div class="tracking-info">
+                                <div id="${sh.trackingNumber}-status" class="tracking-status loading">Loading...</div>
+                                <div id="${sh.trackingNumber}-delivery" class="delivery-estimate loading">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-details">
+                        <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}">${statusText}</span></div></div>
+                        <div class="detail-item"><div class="detail-label">Carrier</div><div class="detail-value">${sh.carrierCode.toUpperCase()} - ${sh.serviceCode ? sh.serviceCode : 'Unknown'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Ship Date</div><div class="detail-value">${formatDate(sh.shipDate)}</div></div>
+                        <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-value">${formatCurrency(sh.shipmentCost)}</div></div>
+                    </div>
+                    <img style="max-width: 50px;"src=${orderItems[0].imageUrl}><p>${orderItems[0].quantity}x - ${orderItems[0].sku}</p>
+                    <div class="ship-to"><div class="ship-to-header">Ship To:</div><div class="ship-to-address">${formatAddress(sh.shipTo)}</div></div>
+                    <div class="items-summary">${itemsSummary} • Customer: ${sh.customerEmail}</div>
+                </div>
+            `;
+        }
+
+        function openDrawer(trackingNumber, carrier) {
+            drawer.classList.add('open');
+            
+            // Check if we have cached data
+            const cachedData = trackingDataCache.get(trackingNumber);
+            if (cachedData) {
+                // Use cached data instead of re-fetching
+                renderDrawerContent(cachedData.data, cachedData.endpoint);
+            } else {
+                // Fallback: fetch if not in cache (shouldn't happen normally)
+                drawerContent.innerHTML = '<p>Loading tracking info...</p>';
+                const endpoint = carrier.toUpperCase().includes('FEDEX') ? 'fedex' : 'ups';
+                
+                fetch(`/${endpoint}/track?trackingNumber=${encodeURIComponent(trackingNumber)}`)
+                    .then(res => res.json())
+                    .then(data => renderDrawerContent(data, endpoint))
+                    .catch(err => {
+                        drawerContent.innerHTML = '<p>Error loading tracking info</p>';
+                        console.error(err);
+                    });
+            }
+        }
+
+        function renderDrawerContent(data, endpoint) {
+            if (endpoint === 'fedex') {
+                const result = data.output.completeTrackResults[0].trackResults[0];
+                // status header
+                const statusHtml = `<h2>${result.latestStatusDetail.description}</h2>`;
+
+                // build events list
+                const events = Array.isArray(result.scanEvents) && result.scanEvents.length
+                    ? result.scanEvents.map(e => ({ timestamp: e.date, status: e.derivedStatus, code: e.derivedStatusCode, location: e.scanLocation }))
+                    : (result.dateAndTimes || []).map(dt => ({ timestamp: dt.dateTime, status: dt.type.replace(/_/g,' ').toLowerCase(), code: dt.type, location: result.originLocation?.locationContactAndAddress?.address || {} }));
+
+                // render pills
+                const pills = events.map(e => {
+                    const dt = new Date(e.timestamp);
+                    const formattedDate = `${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getDate().toString().padStart(2,'0')}/${dt.getFullYear()}`;
+                    const formattedTime = `${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+                    const loc = e.location || {};
+                    const locationText = loc.city && (loc.stateOrProvinceCode || loc.stateProvince)
+                        ? ` @ ${loc.city}, ${loc.stateOrProvinceCode || loc.stateProvince}`
+                        : '';
+                    const isDelivered = e.code === 'DL' || result.latestStatusDetail.code === 'DL';
+                    return `<span class="pill${isDelivered ? ' pill-delivered' : ''}">${formattedDate} ${formattedTime} – ${e.status}${locationText}</span>`;
+                }).join('');
+                const pillHtml = `<div class="pill-container">${pills}</div>`;
+
+                // estimated delivery window with date/time
+                let deliveryHtml = '';
+                const window = result.estimatedDeliveryTimeWindow?.window || {};
+                if (window.begins) {
+                    const od = new Date(window.begins);
+                    const cd = window.ends ? new Date(window.ends) : null;
+                    const oDate = `${(od.getMonth()+1).toString().padStart(2,'0')}/${od.getDate().toString().padStart(2,'0')}/${od.getFullYear()}`;
+                    const oTime = `${od.getHours().toString().padStart(2,'0')}:${od.getMinutes().toString().padStart(2,'0')}`;
+                    const cDate = cd ? `${(cd.getMonth()+1).toString().padStart(2,'0')}/${cd.getDate().toString().padStart(2,'0')}/${cd.getFullYear()}` : '';
+                    const cTime = cd ? ` ${cd.getHours().toString().padStart(2,'0')}:${cd.getMinutes().toString().padStart(2,'0')}` : '';
+                    deliveryHtml = `<div class="delivery-info"><strong>Est. Delivery:</strong> ${oDate} ${oTime}${cd ? ` – ${cDate}${cTime}` : ''}</div>`;
+                }
+
+                // origin fallback
+                const originAddr = result.shipperInformation?.address
+                    || result.originLocation?.locationContactAndAddress?.address
+                    || {};
+                const originLines = originAddr.streetLines?.join(', ') || '';
+                const originText = `${originLines}<br>${originAddr.city || ''}, ${originAddr.stateOrProvinceCode || originAddr.stateProvince || ''} ${originAddr.postalCode || ''}`;
+                const originHtml = `<div class="origin-info"><strong>Origin:</strong><br>${originText}</div>`;
+
+                // inject
+                drawerContent.innerHTML = statusHtml + pillHtml + deliveryHtml + originHtml;
+            } else {
+                const pkg = data.trackResponse.shipment[0].package[0];
+                // status
+                const statusHtml = `<h2>${pkg.currentStatus.description}</h2>`;
+                // pills with date, time, description, location
+                const pills = pkg.activity.map(a => {
+                    const ad = a.date;
+                    const formattedActivityDate = ad ? `${ad.slice(4,6)}/${ad.slice(6)}/${ad.slice(0,4)}` : '';
+                    const at = a.startTime || a.time || a.gmtTime;
+                    const formattedActivityTime = at ? `${at.slice(0,2)}:${at.slice(2,4)}` : '';
+                    const loc = a.location.address || {};
+                    const locationText = loc.city && loc.stateProvince ? ` @ ${loc.city}, ${loc.stateProvince}` : '';
+                    const isDelivered = a.status.type === 'D';
+                    return `<span class="pill${isDelivered ? ' pill-delivered' : ''}">
+     <b> ${formattedActivityDate} </b>${formattedActivityTime} - ${a.status.description.trim()}${locationText}
+    </span>`;
+                }).join('');
+                const pillHtml = `<div class="pill-container">${pills}</div>`;
+                // delivery estimate
+                const dd = pkg.deliveryDate && pkg.deliveryDate[0] ? pkg.deliveryDate[0].date : '';
+                const formattedDate = dd ? `${dd.slice(4,6)}/${dd.slice(6)}/${dd.slice(0,4)}` : 'N/A';
+                const dt = pkg.deliveryTime || {};
+                const t = dt.startTime ?? dt.endTime ?? dt.type ?? '';
+                const formattedTime = (t === 'EOD' || t === 'DEL') ? t : t ? `${t.slice(0,2)}:${t.slice(2,4)}` : 'N/A';
+                const deliveryHtml = `<div class="delivery-info"><strong>Est. Delivery:</strong> ${formattedDate} at ${formattedTime}</div>`;
+                // origin address
+                const originObj = pkg.packageAddress.find(a => a.type==='ORIGIN') || {};
+                const originAddr = originObj.address || {};
+                const addressLine1 = originAddr.addressLine1?.trim() || '';
+                const originText = `${addressLine1}<br>${originAddr.city || ''}, ${originAddr.stateProvince || ''} ${originAddr.postalCode || ''}`;
+                const originHtml = `<div class="origin-info"><strong>Origin:</strong><br>${originText}</div>`;
+                drawerContent.innerHTML = statusHtml + pillHtml + deliveryHtml + originHtml;
+            }
+        }
+
+        drawerClose.addEventListener('click', () => drawer.classList.remove('open'));
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const qParam = params.get('q');
+    if (qParam) {
+      searchInput.value = qParam;
+      performSearch();
+    }
+  });
+
+  // 2) Main search function
+  function performSearch() {
+    const q = searchInput.value.trim();
+    if (!q) {
+      showError('Please enter a search term');
+      return;
+    }
+
+    // Update URL without reload
+    history.replaceState(null, '', `?q=${encodeURIComponent(q)}`);
+
+    showLoading();
+    searchBtn.disabled = true;
+
+    fetch(`/search?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+
+        hideAll();
+        if (!data.results.length) {
+          resultsList.innerHTML = '<div class="no-results">No orders found matching your search.</div>';
+        } else {
+          resultsList.innerHTML = data.results.map(createResultCard).join('');
+          resultsCount.textContent = `Found ${data.count} result${data.count !== 1 ? 's' : ''}`;
+
+          // Fetch tracking status for each result
+          data.results.forEach(result => {
+            fetchTrackingStatus(result.trackingNumber, result.carrierCode);
+          });
+        }
+        results.style.display = 'block';
+      })
+      .catch(err => {
+        showError('Search failed. Please try again.');
+        console.error(err);
+      })
+      .finally(() => {
+        searchBtn.disabled = false;
+      });
+  }
+
+  // 3) Wire up your existing buttons/keys
+  searchBtn.addEventListener('click', performSearch);
+  searchInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') performSearch();
+  });
+  searchInput.focus();
+    </script>
+</body>
+</html>
