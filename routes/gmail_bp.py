@@ -9,7 +9,7 @@ def gmail_auth():
     auth_url = get_gmail_auth_url()
     return redirect(auth_url)
 
-@gmail_bp.route('/callback')
+@gmail_bp.route('/oauth2callback')
 def gmail_callback():
     try:
         fetch_gmail_token(request.url)
