@@ -7,6 +7,8 @@ gmail_bp = Blueprint('gmail', __name__)
 @gmail_bp.route('/authorize')
 def gmail_auth():
     auth_url = get_gmail_auth_url()
+    # DEBUG: print or log the auth_url
+    print(f"🔍 Google auth_url: {auth_url}", flush=True)
     return redirect(auth_url)
 
 @gmail_bp.route('/oauth2callback')
