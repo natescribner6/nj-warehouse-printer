@@ -135,6 +135,22 @@
                 padding: 0 1rem;
             }
         }
+
+        .nav_v1_login_btn {
+  display: inline-flex;
+  align-items: center;
+  background-color: #4285F4;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+}
+.nav_v1_login_btn img {
+  display: inline-block;
+  /* height/margin already set inline for flexibility */
+}
+
     </style>
 </head>
 <body>
@@ -164,18 +180,31 @@
                 </div>
             </div>
             
-            <div class="nav_v1_login">
-                <a href="/login" class="nav_v1_login_btn">Login with Google</a>
-            </div>
-        </div>
+<div class="nav_v1_login">
+  <a href="/login" class="nav_v1_login_btn">
+    <img
+      src="https://developers.google.com/identity/images/g-logo.png"
+      alt="Google logo"
+      style="height:20px; vertical-align:middle; margin-right:8px; border: 2px solid white; border-radius: 10px;"
+    />
+    Login with Google
+  </a>
+</div>
     </nav>
     
-    <main class="nav_v1_content">
-        <div class="nav_v1_auth_message">
-            <h2>Authentication Required</h2>
-            <p>Please log in with your Google account to access the dashboard tools.</p>
-            <a href="/login" class="nav_v1_login_btn">Login with Google</a>
-        </div>
-    </main>
+<main class="nav_v1_content">
+  <div class="nav_v1_auth_message">
+    <h2>Authentication Required</h2>
+    <p>Please log in with your Google account to access the dashboard tools.</p>
+    <a href="/login" class="nav_v1_login_btn">
+      <img
+        src="https://developers.google.com/identity/images/g-logo.png"
+        alt="Google logo"
+        style="height:20px; vertical-align:middle; margin-right:8px; border: 2px solid white; border-radius: 10px;"
+      />
+      Login with Google
+    </a>
+  </div>
+</main>
 </body>
 </html>
