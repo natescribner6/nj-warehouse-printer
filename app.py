@@ -26,12 +26,17 @@ from routes.shipstation_bp import shipstation_bp
 from routes.ups_bp         import ups_bp
 from routes.fedex_bp       import fedex_bp
 from routes.shopify_gmail_bp import shopify_gmail_bp
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 
 
 # Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
 app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_HTTPONLY=True,
