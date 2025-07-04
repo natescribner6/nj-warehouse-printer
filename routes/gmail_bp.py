@@ -1,34 +1,60 @@
-# routes/gmail_bp.py
-from flask import Blueprint, request, redirect, jsonify
-from gmail_service import get_gmail_service, get_gmail_auth_url, fetch_gmail_token, list_gmail_messages
-import logging
+from flask import Blueprint, request, jsonify, session, url_for, current_app
+from flask_login import current_user
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+import os
 
+from app import google, login_required_custom
+
+# Blueprint for Gmail-related routes
 gmail_bp = Blueprint('gmail', __name__)
-logger = logging.getLogger(__name__)  # module‐level logger
-
-@gmail_bp.route('/authorize')
-def gmail_auth():
-    auth_url = get_gmail_auth_url()
-    logger.debug(f"🔍 Google auth_url: {auth_url}")
-    return redirect(auth_url)
-
-@gmail_bp.route('/oauth2callback')
-def gmail_callback():
-    try:
-        fetch_gmail_token(request.url)
-        return jsonify(message='Gmail authentication successful')
-    except Exception as e:
-        return jsonify(error=str(e)), 500
 
 @gmail_bp.route('/gmail/emails')
+@login_required_custom
 def get_emails():
+    # Retrieve stored OAuth token from session
+    token = session.get('google_token')
+    if not token:
+        return jsonify(
+            error='Authentication required',
+            auth_url=url_for('authorize')
+        ), 401
+
+    # Build Credentials object
+    creds = Credentials(
+        token['access_token'],
+        refresh_token=token.get('refresh_token'),
+        token_uri=google.metadata['token_endpoint'],
+        client_id=os.getenv('GOOGLE_CLIENT_ID'),
+        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    )
+
+    # Refresh if expired
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+        except Exception as e:
+            current_app.logger.error("Failed to refresh Gmail credentials: %s", e)
+            return jsonify(error='Failed to refresh credentials'), 500
+
+    # Build Gmail service
+    try:
+        service = build('gmail', 'v1', credentials=creds)
+    except Exception as e:
+        current_app.logger.error("Failed to initialize Gmail service: %s", e)
+        return jsonify(error='Gmail service error'), 500
+
+    # Fetch messages
     query = request.args.get('q', '')
     max_results = int(request.args.get('maxResults', 10))
-    service = get_gmail_service()
-    if not service:
-        return jsonify(error='Authentication required', auth_url='/authorize'), 401
     try:
-        messages, total = list_gmail_messages(query, max_results)
+        resp = service.users().messages().list(
+            userId='me', q=query, maxResults=max_results
+        ).execute()
+        messages = resp.get('messages', [])
+        total = resp.get('resultSizeEstimate', 0)
         return jsonify(messages=messages, total_found=total)
     except Exception as e:
+        current_app.logger.error("Gmail API error: %s", e)
         return jsonify(error=str(e)), 500

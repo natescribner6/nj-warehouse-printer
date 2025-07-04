@@ -1729,17 +1729,23 @@ def login():
 @app.route("/authorize")
 def authorize():
     try:
-        token = google.authorize_access_token()
+        token = google.authorize_access_token()      # <-- has access_token & refresh_token
         userinfo = google.userinfo()
-        
+
         if not userinfo or "sub" not in userinfo or "email" not in userinfo:
-            return "Authentication failed: Missing user information", 400
-        
+            return "Authentication failed", 400
+
+        # Save user ID + email
         session["user"] = {"sub": userinfo["sub"], "email": userinfo["email"]}
         login_user(User(userinfo["sub"], userinfo["email"]))
-        return redirect(url_for("verified"))  # or wherever you want to redirect
+
+        # Persist the OAuth tokens
+        session["google_token"] = token
+
+        return redirect(url_for("verified"))
     except Exception as e:
-        return f"Authentication failed: {str(e)}", 400
+        return f"Authentication failed: {e}", 400
+
 
 @app.route("/logout")
 def logout_v2():
