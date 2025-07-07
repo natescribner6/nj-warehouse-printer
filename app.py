@@ -27,7 +27,7 @@ from routes.ups_bp         import ups_bp
 from routes.fedex_bp       import fedex_bp
 from routes.shopify_gmail_bp import shopify_gmail_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
-
+from routes.gmail_bp import gmail_bp
 
 
 # Load environment variables from .env file
@@ -95,6 +95,7 @@ app.register_blueprint(shipstation_bp)   # mounts at /search
 app.register_blueprint(ups_bp)           # mounts at /ups
 app.register_blueprint(fedex_bp)         # mounts at /fedex
 app.register_blueprint(shopify_gmail_bp, url_prefix='/website-cs')
+app.register_blueprint(gmail_bp)
 
 
 # Configuration variables from environment
