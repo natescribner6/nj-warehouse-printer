@@ -1731,6 +1731,7 @@ def login():
 def authorize():
     try:
         token = google.authorize_access_token()      # <-- has access_token & refresh_token
+        session['google_token'] = token
         userinfo = google.userinfo()
 
         if not userinfo or "sub" not in userinfo or "email" not in userinfo:
