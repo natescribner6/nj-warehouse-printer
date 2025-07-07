@@ -1,17 +1,15 @@
 from flask import Blueprint, request, jsonify, session, url_for, current_app
-from flask_login import current_user
+from flask_login import current_user, login_required
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 import os
 
-from app import google, login_required_custom
-
 # Blueprint for Gmail-related routes
 gmail_bp = Blueprint('gmail', __name__)
 
 @gmail_bp.route('/gmail/emails')
-@login_required_custom
+@login_required
 def get_emails():
     # Retrieve stored OAuth token from session
     token = session.get('google_token')
