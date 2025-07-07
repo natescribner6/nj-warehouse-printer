@@ -128,6 +128,29 @@
             font-size: 0.8rem;
         }
     }
+
+    .tracking-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.tracking-btn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tracking-btn:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+
     </style>
 </head>
 <body>
@@ -270,6 +293,40 @@
                 });
         }
 
+        function copyTracking(trackingNumber) {
+    navigator.clipboard.writeText(trackingNumber).then(() => {
+        // Optional: show a brief success message
+        console.log('Tracking number copied to clipboard');
+    }).catch(err => {
+        console.error('Failed to copy tracking number:', err);
+    });
+}
+
+function openCarrierTracking(trackingNumber, carrierCode, postalCode) {
+    // Copy zip code (first 5 digits only)
+    const zipCode = postalCode ? postalCode.split('-')[0].substring(0, 5) : '';
+    if (zipCode) {
+        navigator.clipboard.writeText(zipCode).then(() => {
+            console.log('Zip code copied to clipboard:', zipCode);
+        }).catch(err => {
+            console.error('Failed to copy zip code:', err);
+        });
+    }
+    
+    // Open carrier tracking page
+    let trackingUrl = '';
+    if (carrierCode.toUpperCase().includes('FEDEX')) {
+        trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+    } else if (carrierCode.toUpperCase().includes('UPS')) {
+        trackingUrl = `https://www.ups.com/track?tracknum=${trackingNumber}`;
+    } else {
+        // Fallback for other carriers
+        trackingUrl = `https://www.google.com/search?q=${trackingNumber}+tracking`;
+    }
+    
+    window.open(trackingUrl, '_blank');
+}
+
         function createResultCard(sh) {
             const statusClass = sh.voided ? 'status-voided' : 'status-shipped';
             const statusText = sh.voided ? 'Voided' : 'Shipped';
@@ -280,13 +337,17 @@
                 <div class="result-card" onclick="openDrawer('${sh.trackingNumber}', '${sh.carrierCode}')">
                     <div class="result-header">
                         <div class="order-number">${sh.orderNumber}</div>
-                        <div style="display: flex; align-items: flex-start;">
-                            <div class="tracking-number">${sh.trackingNumber}</div>
-                            <div class="tracking-info">
-                                <div id="${sh.trackingNumber}-status" class="tracking-status loading">Loading...</div>
-                                <div id="${sh.trackingNumber}-delivery" class="delivery-estimate loading">Loading...</div>
-                            </div>
-                        </div>
+<div style="display: flex; align-items: flex-start;">
+    <div class="tracking-number">${sh.trackingNumber}</div>
+    <div class="tracking-actions">
+        <button class="tracking-btn" onclick="event.stopPropagation(); copyTracking('${sh.trackingNumber}')" title="Copy tracking number">📋</button>
+        <button class="tracking-btn" onclick="event.stopPropagation(); openCarrierTracking('${sh.trackingNumber}', '${sh.carrierCode}', '${sh.shipTo?.postalCode || ''}')" title="Open carrier tracking">🔗</button>
+    </div>
+    <div class="tracking-info">
+        <div id="${sh.trackingNumber}-status" class="tracking-status loading">Loading...</div>
+        <div id="${sh.trackingNumber}-delivery" class="delivery-estimate loading">Loading...</div>
+    </div>
+</div>
                     </div>
                     <div class="result-details">
                         <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="status-badge ${statusClass}">${statusText}</span></div></div>
