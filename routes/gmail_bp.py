@@ -18,7 +18,7 @@ def get_emails():
     if not token:
         return jsonify(
             error='Authentication required',
-            auth_url=url_for('authorize')
+            auth_url=url_for('login', _external=True)
         ), 401
 
     # Build Credentials object

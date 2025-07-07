@@ -15,7 +15,7 @@ def shopify_gmail():
     service = get_gmail_service()
     if not service:
         # no token yet — send them to your OAuth dance
-        return redirect(url_for('authorize'))
+        return redirect(url_for('login', _external=True))
 
     # 1) limit from query-param
     n = request.args.get('limit', default=50, type=int)
