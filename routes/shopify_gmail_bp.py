@@ -1,6 +1,6 @@
 # routes/shopify_gmail_bp.py
 import re
-from flask import Blueprint, request, render_template, redirect, url_for
+from flask import Blueprint, request, render_template, redirect, url_for, session
 from shopify_api import fetch_recent_orders, extract_unique_emails
 from gmail_service import get_gmail_service, list_gmail_messages
 
@@ -12,10 +12,9 @@ shopify_gmail_bp = Blueprint('shopify_gmail', __name__, url_prefix='/website-cs'
 @shopify_gmail_bp.route('/', methods=['GET'], strict_slashes=False)
 def shopify_gmail():
     # 1) limit from query-param
-    service = get_gmail_service()
-    if not service:
-        # no token yet — send them to your OAuth dance
+    if 'google_token' not in session:
         return redirect(url_for('login', _external=True))
+    
 
     # 1) limit from query-param
     n = request.args.get('limit', default=50, type=int)

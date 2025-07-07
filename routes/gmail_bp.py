@@ -11,6 +11,7 @@ gmail_bp = Blueprint('gmail', __name__)
 @gmail_bp.route('/gmail/emails')
 @login_required
 def get_emails():
+    from app import google
     # Retrieve stored OAuth token from session
     token = session.get('google_token')
     if not token:
