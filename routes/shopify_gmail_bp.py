@@ -34,21 +34,29 @@ def shopify_gmail():
         full = service.users().messages().get(
             userId='me',
             id=m['id'],
-            format='metadata',
-            metadataHeaders=['From','Subject','Date']
+            format='full'  # This gets you labels
         ).execute()
 
         # pull headers into a dict
         hdrs = {h['name']: h['value'] for h in full['payload']['headers']}
         text = (hdrs.get('Subject','') + " " + full.get('snippet',''))
         order_id = ORDER_RE.search(text)
+        
+        label_ids = full.get('labelIds', [])
+        status = 'unlabeled'
+        if 'Label_360347153155262293' in label_ids:  # closed
+            status = 'closed'
+        elif 'Label_5784952544351998473' in label_ids:  # open
+            status = 'open'
+        
         detailed.append({
             'from':    hdrs.get('From',''),
             'subject': hdrs.get('Subject',''),
             'date':    hdrs.get('Date',''),
             'snippet': full.get('snippet',''),
             'threadId': m['threadId'],
-            'orderIDs': order_id.group(0) if order_id else ''
+            'orderIDs': order_id.group(0) if order_id else '',
+            'status': status  # Add this line
         })
 
     # 5) render the template
