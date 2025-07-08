@@ -98,12 +98,19 @@
     <button type="submit">Apply</button>
   </form>
   <button class="refresh-btn" onclick="window.location.reload()">Refresh</button>
+  <div style="margin-bottom: 15px;">
+  <button onclick="filterMessages('all')">All</button>
+  <button onclick="filterMessages('open')">Open</button>
+  <button onclick="filterMessages('closed')">Closed</button>
+  <button onclick="filterMessages('unlabeled')">Unlabeled</button>
+</div>
   <table>
     <thead>
       <tr>
         <th>From</th>
         <th>Subject</th>
         <th>Date Received</th>
+        <tr class="message-row" data-status="{{ row.status }}">
         <th>Snippet</th>
         <th>msg id</th>
         <th>Order IDS</th>
@@ -130,5 +137,17 @@
       {% endfor %}
     </tbody>
   </table>
+  <script>
+function filterMessages(status) {
+    const messages = document.querySelectorAll('.message-row');
+    messages.forEach(msg => {
+        if (status === 'all' || msg.dataset.status === status) {
+            msg.style.display = '';
+        } else {
+            msg.style.display = 'none';
+        }
+    });
+}
+</script>
 </body>
 </html>
