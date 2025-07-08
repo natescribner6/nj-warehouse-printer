@@ -241,7 +241,7 @@
       return csv;
     }
 
-  async function loadOrders() {
+async function loadOrders() {
   const res = await fetch(`/hazmat/orders?tagId=${tagId}`, {
     credentials: 'same-origin'  // so your login cookie is sent
   });
@@ -275,6 +275,7 @@
       const skus = o.items.map(i => i.sku);
       return {
         select: false,
+        orderNumber: o.orderNumber,
         warehouse: warehouseMap[o.advancedOptions.warehouseId] || o.advancedOptions.warehouseId,
         shipmentAge: Math.ceil((now - new Date(o.createDate).getTime()) / (1000*60*60)),
         items: skus.join(', '),
@@ -288,9 +289,17 @@
 
     hot = new Handsontable(document.getElementById('hot-container'), {
       data: tableData,
-      colHeaders: ['Select','Warehouse','Shipment Age','Items','State','Customer','Reference'],
+      colHeaders: ['Select','Order Number','Warehouse','Shipment Age','Items','State','Customer','Reference'],
       columns: [
         { data: 'select', type: 'checkbox', width: 60 },
+        { 
+          data: 'orderNumber', 
+          width: 150,
+          renderer: function(instance, td, row, col, prop, value, cellProperties) {
+            td.innerHTML = `<a href="https://sellercentral.amazon.com/messaging/contact?orderID=${value}&marketplaceID=ATVPDKIKX0DER" target="_blank">${value}</a>`;
+            return td;
+          }
+        },
         { data: 'warehouse' },
         { data: 'shipmentAge', type: 'numeric', width: 100 },
         { data: 'items', width: 300 },
