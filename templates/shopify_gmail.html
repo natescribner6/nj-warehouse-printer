@@ -76,6 +76,34 @@
             font-size: 0.8rem;
         }
     }
+    /* Status badges */
+.message-row[data-status="open"] {
+  border-left: 4px solid #28a745;
+}
+
+.message-row[data-status="closed"] {
+  border-left: 4px solid #6c757d;
+}
+
+.message-row[data-status="unlabeled"] {
+  border-left: 4px solid #ffc107;
+}
+
+/* Optional: style the status text itself */
+.message-row[data-status="open"] td:nth-child(4) {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.message-row[data-status="closed"] td:nth-child(4) {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.message-row[data-status="unlabeled"] td:nth-child(4) {
+  color: #856404;
+  font-weight: 500;
+}
   </style>
 </head>
 <body>
@@ -110,31 +138,32 @@
         <th>From</th>
         <th>Subject</th>
         <th>Date Received</th>
-        <tr class="message-row" data-status="{{ row.status }}">
+        <th>Status</th>
         <th>Snippet</th>
         <th>msg id</th>
         <th>Order IDS</th>
       </tr>
     </thead>
     <tbody>
-      {% for row in messages %}
-      <tr>
-        <td>{{ row.from }}</td>
-        <td>{{ row.subject }}</td>
-        <td>{{ row.date }}</td>
-        <td>{{ row.snippet }}</td>
-        <td>
-          <a href="https://mail.google.com/mail/u/0/#all/{{ row.threadId }}" target="_blank">
-            Open thread in Gmail
-          </a>
-        </td>
-        <td>
-          <a href="{{ url_for('search_page') }}?q={{ row.orderIDs }}" target="_blank">
-            {{ row.orderIDs }}
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
+{% for row in messages %}
+<tr class="message-row" data-status="{{ row.status }}">
+  <td>{{ row.from }}</td>
+  <td>{{ row.subject }}</td>
+  <td>{{ row.date }}</td>
+  <td>{{ row.status }}</td>  <!-- Add this line -->
+  <td>{{ row.snippet }}</td>
+  <td>
+    <a href="https://mail.google.com/mail/u/0/#all/{{ row.threadId }}" target="_blank">
+      Open thread in Gmail
+    </a>
+  </td>
+  <td>
+    <a href="{{ url_for('search_page') }}?q={{ row.orderIDs }}" target="_blank">
+      {{ row.orderIDs }}
+    </a>
+  </td>
+</tr>
+{% endfor %}
     </tbody>
   </table>
   <script>
