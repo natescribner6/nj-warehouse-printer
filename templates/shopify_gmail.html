@@ -86,9 +86,11 @@
 }
 
 .message-row[data-status="unlabeled"] {
+  border-left: 4px solid orangered;
+}
+.message-row[data-status="in progress"] {
   border-left: 4px solid #ffc107;
 }
-
 /* Optional: style the status text itself */
 .message-row[data-status="open"] td:nth-child(4) {
   color: #28a745;
@@ -101,6 +103,10 @@
 }
 
 .message-row[data-status="unlabeled"] td:nth-child(4) {
+  color: orangered;
+  font-weight: 500;
+}
+.message-row[data-status="in progress"] td:nth-child(4) {
   color: #856404;
   font-weight: 500;
 }
@@ -129,6 +135,7 @@
   <div style="margin-bottom: 15px;">
   <button onclick="filterMessages('all')">All</button>
   <button onclick="filterMessages('open')">Open</button>
+  <button onclick="filterMessages('in progress')">in progress</button>
   <button onclick="filterMessages('closed')">Closed</button>
   <button onclick="filterMessages('unlabeled')">Unlabeled</button>
 </div>

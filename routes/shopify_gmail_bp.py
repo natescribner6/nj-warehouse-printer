@@ -41,11 +41,13 @@ def shopify_gmail():
         hdrs = {h['name']: h['value'] for h in full['payload']['headers']}
         text = (hdrs.get('Subject','') + " " + full.get('snippet',''))
         order_id = ORDER_RE.search(text)
-        
+        #Label_5249296589132693192
         label_ids = full.get('labelIds', [])
         status = 'unlabeled'
         if 'Label_360347153155262293' in label_ids:  # closed
             status = 'closed'
+        if 'Label_5249296589132693192' in label_ids:  # in progress
+            status = 'in progress'
         elif 'Label_5784952544351998473' in label_ids:  # open
             status = 'open'
         
