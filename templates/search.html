@@ -150,6 +150,7 @@
     background: #e2e8f0;
     color: #475569;
 }
+.status-fulfilled { background: #dbeafe; color: #1d4ed8; }
 
     </style>
 </head>
@@ -328,8 +329,8 @@ function openCarrierTracking(trackingNumber, carrierCode, postalCode) {
 }
 
         function createResultCard(sh) {
-            const statusClass = sh.voided ? 'status-voided' : 'status-shipped';
-            const statusText = sh.voided ? 'Voided' : 'Shipped';
+            const statusText = sh.voided ? 'Voided' : sh.fulfillment ? 'Fulfilled' : 'Shipped';
+            const statusClass = sh.voided ? 'status-voided' : sh.fulfillment ? 'status-fulfilled' : 'status-shipped';
             const itemsSummary = sh.shipmentItems.length > 0 ? `${sh.shipmentItems.length} item${sh.shipmentItems.length>1?'s':''}` : 'No items';
             const orderItems = sh.fulfillment ? sh.orderItems : sh.shipmentItems;
             
