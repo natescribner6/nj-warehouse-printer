@@ -15,7 +15,8 @@ class ShipStationManager:
         self.fedex_track_url = "https://apis.fedex.com/track/v1/referencenumbers"
         self.fedex_client_id = os.getenv("FEDEX_CLIENT_ID")
         self.fedex_client_secret = os.getenv("FEDEX_CLIENT_SECRET")
-        self.fedex_account_number = os.getenv("FEDEX_ACCOUNT_NUMBER")
+        self.fedex_account_number_co = os.getenv("FEDEX_ACCOUNT_NUMBER_CO")
+        self.fedex_account_number_nj = os.getenv("FEDEX_ACCOUNT_NUMBER_NJ")
         
         # ShipStation configuration
         self.shipstation_base_url = "https://ssapi.shipstation.com"
