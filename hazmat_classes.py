@@ -62,20 +62,20 @@ class ShipStationManager:
             self.logger.error(f"Failed to get FedEx token: {e}")
             raise
     
-    def get_tracking_for_order(self, order_id):
+    def get_tracking_for_order(self, order_id, account_number):
         """Get FedEx tracking number for a given order ID."""
         token = self.get_fedex_token()
         
         # Compute ±1-day window
         today = datetime.now()
         begin = (today - timedelta(days=1)).strftime("%Y-%m-%d")
-        end = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+        end = (today + timedelta(days=3)).strftime("%Y-%m-%d")
         
         payload = {
             "referencesInformation": {
                 "type": "INVOICE",
                 "value": str(order_id),
-                "accountNumber": self.fedex_account_number,
+                "accountNumber": account_number,
                 "shipDateBegin": begin,
                 "shipDateEnd": end
             },
@@ -189,10 +189,13 @@ class ShipStationManager:
         """Get all hazmat orders with their tracking information processed."""
         orders = self.get_hazmat_orders()
         processed_orders = []
-        
+        NJ_ID = 248943
         for order in orders:
+            wid = order.get("advancedOptions", {}).get("warehouseId")
+            acct = self.fedex_account_number_nj if wid == NJ_ID else self.fedex_account_number_co
+            tn = self.get_tracking_for_order(order["orderId"], acct)
             self.logger.info(f"Processing orderId={order['orderId']}")
-            tracking_number = self.get_tracking_for_order(order["orderId"])
+            #tracking_number = self.get_tracking_for_order(order["orderId"])
             
             ship_to = order.get('shipTo', {})
             processed_orders.append({
@@ -200,7 +203,7 @@ class ShipStationManager:
                 'orderNumber': order.get('orderNumber'),
                 'orderDate': order.get('orderDate'),
                 'orderStatus': order.get('orderStatus'),
-                'trackingNumber': tracking_number,
+                'trackingNumber': tn,
                 'shipTo': {
                     'name': ship_to.get('name', ''),
                     'company': ship_to.get('company', ''),
