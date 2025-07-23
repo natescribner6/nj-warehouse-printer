@@ -271,6 +271,8 @@ async function loadOrders() {
       return '';
     }
 
+    console.log(orders[0])
+
     tableData = orders.map(o => {
       // build your items string, but also extract the raw SKUs array
       const skus = o.items.map(i => i.sku);
@@ -287,6 +289,21 @@ async function loadOrders() {
         raw: o
       };
     });
+
+      await Promise.all( orders.map(o => {
+    return fetch(
+      `/search/hazmat/update_db` +
+      `?orderId=${encodeURIComponent(o.orderId)}` +
+      `&warehouseId=${encodeURIComponent(o.advancedOptions.warehouseId)}`,
+      { credentials: 'same-origin' }
+    )
+    .then(r => {
+      if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`);
+      return r.json();
+    })
+    .then(json => console.log('✅ updated', json))
+    .catch(err => console.error('❌ update failed for', o.orderId, err));
+  }) );
 
     hot = new Handsontable(document.getElementById('hot-container'), {
       data: tableData,

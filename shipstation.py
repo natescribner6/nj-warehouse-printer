@@ -48,3 +48,28 @@ def search_shipments(order_number, limit=50):
             'orderItems': order_payload.get('items', []) if isinstance(order_payload, dict) else []
         })
     return results
+
+def update_order_warehouse(order_id: str, warehouse_id: int):
+    """
+    Update the advancedOptions.warehouseId in shipstation_orders_raw.payload
+    for the given order_id.
+    """
+    sql = """
+    UPDATE shipstation_orders_raw
+    SET payload = jsonb_set(
+        payload,
+        '{advancedOptions,warehouseId}',         -- path into the JSON
+        to_jsonb(%s::int),                       -- new value as JSON (an integer)
+        true                                      -- create missing keys if needed
+    )
+    WHERE payload->>'orderId' = %s;
+    """
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql, (warehouse_id, order_id))
+        conn.commit()
+    finally:
+        conn.close()
+
