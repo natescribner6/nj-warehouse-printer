@@ -28,7 +28,7 @@ from routes.fedex_bp       import fedex_bp
 from routes.shopify_gmail_bp import shopify_gmail_bp
 from werkzeug.middleware.proxy_fix import ProxyFix
 from routes.gmail_bp import gmail_bp
-
+from routes.linn_bp import linn_bp
 
 # Load environment variables from .env file
 load_dotenv()
@@ -96,7 +96,7 @@ app.register_blueprint(ups_bp)           # mounts at /ups
 app.register_blueprint(fedex_bp)         # mounts at /fedex
 app.register_blueprint(shopify_gmail_bp, url_prefix='/website-cs')
 app.register_blueprint(gmail_bp)
-
+app.register_blueprint(linn_bp)
 
 # Configuration variables from environment
 PRINTNODE_API_KEY = os.getenv('PRINTNODE_API_KEY')

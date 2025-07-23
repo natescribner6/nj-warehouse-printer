@@ -143,6 +143,13 @@
                     <div class="nav_v1_card_title">Warehouse Tools</div>
                     <div class="nav_v1_card_desc">printer for epsom, etc</div>
                 </a>
+
+<button id="run-rule" class="nav_v1_card">
+  <div class="nav_v1_card_title">Run Rule Test</div>
+  <div class="nav_v1_card_desc">Run 'actual move' rule on all open orders</div>
+</button>
+
+
             </div>
             
             <div class="nav_v1_logout">
@@ -156,5 +163,50 @@
         <h2>welcum</h2>
         <p>select  a tool from the navigation above to get started</p>
     </main>
+
+    <!-- change this: -->
+<!-- <a href="/website-cs" class="nav_v1_card"> … </a> -->
+
+<!-- to this: -->
+<button id="run-rule" class="nav_v1_card">
+  <div class="nav_v1_card_title">Run Rule Test</div>
+  <div class="nav_v1_card_desc">Run 'actual move' rule on all open orders</div>
+</button>
+
+<script>
+document.getElementById("run-rule").addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  try {
+    // 1) fetch open orders
+    const ordersRes = await fetch("/linnworks/orders/open?days=25&page=1&per_page=100");
+    if (!ordersRes.ok) throw new Error("Failed to load open orders");
+    const ordersJson = await ordersRes.json();
+
+    // 2) extract an array of IDs
+    // adjust property name if your API returns something else
+    const ids = ordersJson.Data.map(o => o.OrderId);
+
+    // 3) run the rule
+    const runRes = await fetch("/linnworks/rules/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ruleId: 30, orderIds: ids })
+    });
+    if (!runRes.ok) throw new Error("Rule run failed");
+
+    const runJson = await runRes.json();
+    console.log("Rule result", runJson);
+    alert("Rule executed: " + JSON.stringify(runJson));
+  }
+  catch(err) {
+    console.error(err);
+    alert("Error: " + err.message);
+  }
+});
+</script>
+
+
+
 </body>
 </html>
