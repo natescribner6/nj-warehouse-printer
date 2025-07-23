@@ -87,12 +87,17 @@
   <h1>Hazmat Orders - Mark as Shipped</h1>
   <button class="btn btn-refresh" onclick="refreshOrders()">Refresh Orders</button>
   <div id="status-message"></div>
-
+{# define your map once, maybe at the top of your template #}
+{% set warehouse_map = {
+  248943: 'EZ Pools New Jersey',
+  248944: 'EZ Pools Colorado',
+  256346: 'EZ Pools Jacksonville'
+} %}
   <table id="orders-table">
     <thead>
       <tr>
         <th>Order #</th><th>Order Date</th><th>Status</th><th>Ship To Name</th>
-        <th>Ship To Company</th><th>Address</th><th>City, State ZIP</th>
+        <th>Ship FROM</th><th>Address</th><th>City, State ZIP</th>
         <th>Phone</th><th>Current Tracking</th><th>New Tracking #</th>
         <th>Carrier</th><th>Action</th>
       </tr>
@@ -108,7 +113,7 @@
           </span>
         </td>
         <td>{{ order.shipTo.name }}</td>
-        <td>{{ order.shipTo.company }}</td>
+        <td>      {{ warehouse_map.get(order.warehouseId, order.warehouseId) }}</td>
         <td>
           {{ order.shipTo.street1 }}
           {% if order.shipTo.street2 %}<br>{{ order.shipTo.street2 }}{% endif %}

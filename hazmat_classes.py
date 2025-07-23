@@ -199,11 +199,13 @@ class ShipStationManager:
             #tracking_number = self.get_tracking_for_order(order["orderId"])
             
             ship_to = order.get('shipTo', {})
+            advanced_options = order.get('advancedOptions', {})
             processed_orders.append({
                 'orderId': order['orderId'],
                 'orderNumber': order.get('orderNumber'),
                 'orderDate': order.get('orderDate'),
                 'orderStatus': order.get('orderStatus'),
+                'warehouseId': advanced_options.get('warehouseId'),
                 'trackingNumber': tn,
                 'shipTo': {
                     'name': ship_to.get('name', ''),
