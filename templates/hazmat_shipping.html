@@ -332,23 +332,30 @@ async function loadOrders() {
       licenseKey: 'non-commercial-and-evaluation',
       dropdownMenu: true,
       columnSorting: true,
-      afterOnCellMouseDown(event, coords) {
-        if (coords.row < 0) return;
-        const r = coords.row;
-        if (event.shiftKey && lastSelected !== null) {
-          const [start, end] = [lastSelected, r].sort((a,b)=>a-b);
-          for (let i = start; i <= end; i++) tableData[i].select = true;
-        } else if (event.ctrlKey || event.metaKey) {
-          tableData[r].select = !tableData[r].select;
-          lastSelected = r;
-        } else {
-          tableData.forEach(d=>d.select=false);
-          tableData[r].select = true;
-          lastSelected = r;
-        }
-        hot.render();
-        event.preventDefault();
-      }
+afterOnCellMouseDown(event, coords) {
+  if (coords.row < 0) return;
+  
+  // Convert visual row to physical (data array) row
+  const physicalRow = hot.toPhysicalRow(coords.row);
+  if (physicalRow === null || physicalRow === undefined) return;
+  
+  if (event.shiftKey && lastSelected !== null) {
+    const lastPhysical = hot.toPhysicalRow(lastSelected);
+    if (lastPhysical !== null) {
+      const [start, end] = [lastPhysical, physicalRow].sort((a,b)=>a-b);
+      for (let i = start; i <= end; i++) tableData[i].select = true;
+    }
+  } else if (event.ctrlKey || event.metaKey) {
+    tableData[physicalRow].select = !tableData[physicalRow].select;
+    lastSelected = coords.row; // Keep visual row for shift+click reference
+  } else {
+    tableData.forEach(d=>d.select=false);
+    tableData[physicalRow].select = true;
+    lastSelected = coords.row; // Keep visual row for shift+click reference
+  }
+  hot.render();
+  event.preventDefault();
+}
     });
   }
 
