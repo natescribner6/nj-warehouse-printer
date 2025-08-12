@@ -1314,14 +1314,23 @@ def sign_pdf():
         if not uploaded_file.filename.lower().endswith('.pdf'):
             return jsonify({"error": "Only PDF files are allowed"}), 400
         
+        # Get template selection (default to 'A')
+        template = request.form.get('template', 'A')
+        
         # Read uploaded PDF
         reader = PdfReader(uploaded_file)
         first = reader.pages[0]
         w = float(first.mediabox.width)
         h = float(first.mediabox.height)
         
-        # Signature positions (in inches) → points
-        spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]
+        # Signature positions based on template
+        if template == 'A':
+            spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]  # Original positions
+        elif template == 'B':
+            spots_in = [(1.2, 8.5), (5.1, 8.5), (1.2, 5.0)]  # New positions for Template B
+        else:
+            spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]  # Default to A
+        
         spots_pt = [(x*72, y*72) for x, y in spots_in]
         
         # Build overlay

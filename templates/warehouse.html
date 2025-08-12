@@ -544,6 +544,38 @@
     z-index: 3;
 }
 
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #007bff;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.2.5/dist/quagga.min.js"></script>
 
@@ -620,6 +652,17 @@
     <!-- PDF Signer Mode -->
 <div class="shipping-mode" id="pdfSignerMode">
 <h2 style="margin-bottom: 20px; color: #333;">✍️ PDF Document Signer</h2>
+<div style="text-align: center; margin-bottom: 20px;">
+    <div style="display: inline-flex; align-items: center; background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0;">
+        <span style="margin-right: 15px; font-weight: 500;">Template A</span>
+        <label class="switch" style="position: relative; display: inline-block; width: 60px; height: 34px;">
+            <input type="checkbox" id="templateToggle" style="opacity: 0; width: 0; height: 0;">
+            <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+        </label>
+        <span style="margin-left: 15px; font-weight: 500;">Template B</span>
+    </div>
+    <p style="margin-top: 10px; font-size: 14px; color: #666;">Template A: Standard positions | Template B: Alternative positions</p>
+</div>
 <p style="margin-bottom: 20px; color: #666; font-style: italic; text-align: center;">Automatically adds signature to OP-900 Laser File (red sticker paper for hazmats)</p>    
     <div class="shipping-search">
         <div id="dropZone" style="border: 2px dashed #ccc; border-radius: 10px; padding: 40px; text-align: center; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease;">
@@ -649,6 +692,8 @@
     <div class="products-grid" id="productsGrid"></div>
 
     <script>
+        let selectedTemplate = 'A'; // Default to Template A
+
         let allProducts = [];
         let currentCategory = 'all';
         let currentMode = 'product';
@@ -1106,6 +1151,13 @@ function setupPdfSigner() {
             handlePdfSelection(e.target.files[0]);
         }
     });
+
+    // Template toggle event listener
+document.getElementById('templateToggle').addEventListener('change', (e) => {
+    selectedTemplate = e.target.checked ? 'B' : 'A';
+    console.log('Template switched to:', selectedTemplate);
+});
+
 }
 
 function handlePdfSelection(file) {
@@ -1130,6 +1182,7 @@ async function signAndDownloadPdf() {
         
         const formData = new FormData();
         formData.append('file', selectedPdfFile);
+        formData.append('template', selectedTemplate);
         
         const response = await fetch('/api/sign-pdf', {
             method: 'POST',
@@ -1147,7 +1200,7 @@ async function signAndDownloadPdf() {
             a.remove();
             URL.revokeObjectURL(url);
             
-            showSuccess('✅ PDF signed and downloaded successfully!');
+            showSuccess(`✅ PDF signed with Template ${selectedTemplate} and downloaded successfully!`);
             signBtn.innerHTML = '✅ Signed!';
             
             setTimeout(() => {
