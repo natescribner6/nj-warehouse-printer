@@ -1319,37 +1319,58 @@ def sign_pdf():
         
         # Read uploaded PDF
         reader = PdfReader(uploaded_file)
-        first = reader.pages[0]
-        w = float(first.mediabox.width)
-        h = float(first.mediabox.height)
-        
-        # Signature positions based on template
-        if template == 'A':
-            spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]  # Original positions
-        elif template == 'B':
-            spots_in = [(1.2, 8.5), (5.1, 8.5), (1.2, 5.0)]  # New positions for Template B
-        else:
-            spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]  # Default to A
-        
-        spots_pt = [(x*72, y*72) for x, y in spots_in]
-        
-        # Build overlay
-        packet = io.BytesIO()
-        c = canvas.Canvas(packet, pagesize=(w, h))
-        c.setFont("Helvetica", 10)
-        for x, y in spots_pt:
-            c.drawString(x, y, "Tim Marker")
-        c.save()
-        packet.seek(0)
-        overlay = PdfReader(packet).pages[0]
-        
-        # Optional shift (adjust as needed)
-        shift_x = 0.25 * 28.35  # 0.25 cm in points
-        transform = Transformation().translate(tx=shift_x, ty=0)
-        
-        # Merge onto every page
         writer = PdfWriter()
-        for page in reader.pages:
+        
+        for page_num, page in enumerate(reader.pages):
+            # Get page dimensions and rotation
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+            rotation = page.get('/Rotate', 0)
+            
+            # Determine if page is landscape based on dimensions and rotation
+            is_landscape = False
+            if rotation in [90, 270]:
+                # Page is rotated, so swap our understanding of width/height
+                is_landscape = h > w  # After rotation, height > width means landscape
+            else:
+                is_landscape = w > h  # Normal case: width > height means landscape
+            
+            # Set coordinates based on template and page orientation
+            if template == 'B' or is_landscape:
+                # For landscape pages, use landscape coordinates
+                spots_in = [(7.4, 0.35)]
+            else:
+                # For portrait pages, use portrait coordinates  
+                spots_in = [(0.80, 7.97), (4.7, 7.97), (0.80, 4.55)]
+            
+            spots_pt = [(x*72, y*72) for x, y in spots_in]
+            
+            # Build overlay for this page
+            packet = io.BytesIO()
+            
+            # Create canvas with original page dimensions
+            c = canvas.Canvas(packet, pagesize=(w, h))
+            c.setFont("Helvetica", 10)
+            
+            # Handle rotation - apply the same rotation as the original page
+            if rotation == 90:
+                c.rotate(90)
+                c.translate(0, -w)
+            elif rotation == 180:
+                c.rotate(180)
+                c.translate(-w, -h)
+            elif rotation == 270:
+                c.rotate(270)
+                c.translate(-h, 0)
+            
+            # Draw signatures at original coordinates - let the rotation handle positioning
+            for x, y in spots_pt:
+                c.drawString(x, y, "Tim Marker")
+            
+            c.save()
+            packet.seek(0)
+            overlay = PdfReader(packet).pages[0]
+            
             page.merge_page(overlay)
             writer.add_page(page)
         

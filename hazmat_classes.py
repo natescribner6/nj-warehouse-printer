@@ -134,7 +134,7 @@ class ShipStationManager:
         params = {
             'orderStatus': 'awaiting_shipment',
             'tagId': self.hazmat_tag_id,
-            'pageSize': 30
+            'pageSize': 65
         }
         headers = {
             'Authorization': self.shipstation_auth,
