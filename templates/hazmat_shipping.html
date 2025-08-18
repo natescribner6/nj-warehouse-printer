@@ -107,6 +107,9 @@
   </div>
 
   <div id="hot-container"></div>
+  <div id="selected-count" style="margin-top:8px; font-size:0.9rem; color:#495057;">
+  0 rows selected
+</div>
   <button id="export-btn">Export FedEx CSV</button>
 
   <!-- moment.js for timestamp -->
@@ -354,6 +357,12 @@ afterOnCellMouseDown(event, coords) {
     lastSelected = coords.row; // Keep visual row for shift+click reference
   }
   hot.render();
+
+  document.getElementById('selected-count').textContent = 
+  tableData.filter(r => r.select).length + " rows selected";
+
+
+  
   event.preventDefault();
 }
     });
