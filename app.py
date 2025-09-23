@@ -108,7 +108,7 @@ SHIPSTATION_URL = "https://api.shipstation.com/v2/labels"
 
 # Printer IDs from environment
 LABEL_PRINTER_ID = int(os.getenv('LABEL_PRINTER_ID', 74471601))
-STICKER_PRINTER_ID = int(os.getenv('STICKER_PRINTER_ID', 74471602))
+STICKER_PRINTER_ID = int(os.getenv('STICKER_PRINTER_ID', 74622079))
 
 # Flask Configuration
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
