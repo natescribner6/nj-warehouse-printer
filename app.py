@@ -612,7 +612,7 @@ def get_shipping_label_by_shipment_id(shipment_id):
         }
         
         response = requests.get(
-            f"{SHIPSTATION_URL}?shipmentId={shipment_id}",
+            f"{SHIPSTATION_URL}?shipment_id={shipment_id}",
             headers=headers
         )
         
