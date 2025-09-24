@@ -600,6 +600,63 @@ def get_shipping_label(tracking_number):
             "error": f"An error occurred: {str(err)}"
         }), 500
 
+
+# Shipping label lookup endpoint by shipment_id
+@app.route('/api/shipping-label/shipment/<shipment_id>')
+def get_shipping_label_by_shipment_id(shipment_id):
+    """Get shipping label by shipment_id from ShipStation"""
+    try:
+        # Make request to ShipStation API
+        headers = {
+            'api-key': SHIPSTATION_API_KEY
+        }
+        
+        response = requests.get(
+            f"{SHIPSTATION_URL}?shipmentId={shipment_id}",
+            headers=headers
+        )
+        
+        if response.status_code == 404:
+            return jsonify({"error": "Shipment ID not found"}), 404
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data.get('labels') or len(data['labels']) == 0:
+            return jsonify({"error": "No labels found for this shipment ID"}), 404
+        
+        label = data['labels'][0]  # Get the first label
+        
+        # Extract relevant information
+        label_info = {
+            "tracking_number": label.get("tracking_number"),
+            "status": label.get("status"),
+            "carrier_code": label.get("carrier_code"),
+            "service_code": label.get("service_code"),
+            "ship_date": label.get("ship_date"),
+            "pdf_url": label.get("label_download", {}).get("pdf"),
+            "png_url": label.get("label_download", {}).get("png"),
+            "ship_to": label.get("ship_to", {}),
+            "tracking_status": label.get("tracking_status"),
+            "label_layout": label.get("label_layout")
+        }
+        
+        return jsonify({
+            "success": True,
+            "label": label_info
+        })
+        
+    except requests.HTTPError as http_err:
+        return jsonify({
+            "error": f"ShipStation API error: {http_err}",
+            "details": response.text if 'response' in locals() else "No response details"
+        }), 500
+    except Exception as err:
+        return jsonify({
+            "error": f"An error occurred: {str(err)}"
+        }), 500
+
+
 # Print shipping label endpoint
 @app.route('/api/print-shipping-label', methods=['POST'])
 def print_shipping_label():
