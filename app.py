@@ -527,6 +527,7 @@ def home():
             <h1>Nate's Site</h1>
             <p>Professional website coming soon...</p>
             <a href="/ops" class="go-btn">GO →</a>
+            <a href="https://warehouse-printer-v2-psvmk.ondigitalocean.app/" target="_blank" class="go-btn">v2 →</a>
         </div>
     </body>
     </html>
