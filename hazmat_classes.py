@@ -17,6 +17,7 @@ class ShipStationManager:
         self.fedex_client_secret = os.getenv("FEDEX_CLIENT_SECRET")
         self.fedex_account_number_co = os.getenv("FEDEX_ACCOUNT_NUMBER_CO")
         self.fedex_account_number_nj = os.getenv("FEDEX_ACCOUNT_NUMBER_NJ")
+        self.fedex_account_number_fl = os.getenv("FEDEX_ACCOUNT_NUMBER_FL")  # 🔹 NEW
         
         # ShipStation configuration
         self.shipstation_base_url = "https://ssapi.shipstation.com"
@@ -191,9 +192,14 @@ class ShipStationManager:
         orders = self.get_hazmat_orders()
         processed_orders = []
         NJ_ID = 248943
+        FL_ID = 256346  # 🔹 NEW
         for order in orders:
             wid = order.get("advancedOptions", {}).get("warehouseId")
-            acct = self.fedex_account_number_nj if wid == NJ_ID else self.fedex_account_number_co
+            acct = (
+                self.fedex_account_number_nj if wid == NJ_ID else
+                self.fedex_account_number_fl if wid == FL_ID else
+                self.fedex_account_number_co
+            )
             tn = self.get_tracking_for_order(order["orderId"], acct)
             self.logger.info(f"Processing orderId={order['orderId']}")
             #tracking_number = self.get_tracking_for_order(order["orderId"])
