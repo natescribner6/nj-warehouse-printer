@@ -1,144 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Hazmat Orders → FedEx CSV</title>
+
   <!-- Handsontable CSS -->
-  <link 
-    rel="stylesheet" 
-    href="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.css" 
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.css"/>
+
   <style>
-    body { font-family: sans-serif; padding: 1rem; }
-    .config { margin-bottom: 1rem; }
-    .config label { display: inline-block; width: 120px; }
-    .config select { width: 300px; margin-right: 1rem; }
-    #export-btn { margin-top: 10px; }
+    :root {
+      --fg: #2b2f33;
+      --muted: #6c757d;
+      --brand: #0d6efd;
+      --bg: #f8f9fa;
+      --chip: #e9ecef;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--fg); margin: 0; background: #fff; }
+    main { max-width: 1200px; margin: 0 auto; padding: 16px 24px 28px; }
 
+    /* header/nav (unchanged look) */
     .nav_v1_header_wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
+      max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
     }
+    .nav_v1_header_links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav_v1_header_link { text-decoration: none; color: #495057; font-size: .9rem; padding: .5rem .75rem; border-radius: 4px; transition: .2s; }
+    .nav_v1_header_link:hover { background:#f8f9fa; color:#007bff; }
+    .nav_v1_header_logout { background: #dc3545; color: #fff !important; padding: .5rem 1rem; border-radius: 4px; text-decoration: none; font-size: .9rem; }
 
-    .nav_v1_header_links {
-        display: flex;
-        gap: 1.5rem;
-        flex-wrap: wrap;
+    /* toolbar */
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin: 14px 0 8px;
     }
-
-    .nav_v1_header_link {
-        text-decoration: none;
-        color: #495057;
-        font-size: 0.9rem;
-        padding: 0.5rem 0.75rem;
-        border-radius: 4px;
-        transition: all 0.2s ease;
+    .toolbar-left {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
     }
-
-    .nav_v1_header_link:hover {
-        background: #f8f9fa;
-        color: #007bff;
+    .toolbar .group { display: flex; align-items: center; gap: 8px; }
+    label.small { color: var(--muted); font-size: .85rem; }
+    select, input[type="text"] {
+      height: 34px; padding: 6px 10px; border: 1px solid #e0e3e7; border-radius: 8px; outline: none;
     }
-
-    .nav_v1_header_link.active {
-        background: #007bff;
-        color: white;
+    input[type="text"] { width: 260px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip {
+      background: var(--chip); color: #495057; padding: 6px 10px; border-radius: 999px; cursor: pointer; user-select: none; font-size: .85rem;
+      border: 1px solid transparent;
     }
+    .chip.active { background: #e7f1ff; color: #0b5ed7; border-color: #cfe2ff; }
+    .muted { color: var(--muted); }
 
-    .nav_v1_header_logout {
-        background: #dc3545;
-        color: white !important;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        text-decoration: none;
-        font-size: 0.9rem;
-        transition: background-color 0.2s ease;
+    .actions { display: flex; gap: 8px; }
+    button, .btn {
+      height: 36px; padding: 6px 12px; border-radius: 8px; border: 1px solid #e0e3e7; background: #fff; cursor: pointer;
     }
+    .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
 
-    .nav_v1_header_logout:hover {
-        background: #c82333;
+    /* handsontable polish */
+    .ht_clone_top.handsontable { box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+    .badge {
+      display:inline-block; padding:2px 6px; border-radius:10px; font-size:.78rem; line-height:1.2; font-weight:600;
     }
+    .badge.overdue { background:#ffe3e3; color:#a61b1b; }
+    .badge.today   { background:#fff4e6; color:#d9480f; }
+    .badge.soon    { background:#e6fcf5; color:#087f5b; }
 
-    @media (max-width: 768px) {
-        .nav_v1_header_wrapper {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        
-        .nav_v1_header_links {
-            justify-content: center;
-            gap: 1rem;
-        }
-        
-        .nav_v1_header_link {
-            font-size: 0.8rem;
-        }
+    .footer {
+      display:flex; gap:12px; align-items:center; justify-content: space-between;
+      color: var(--muted); font-size: .9rem; margin-top: 8px;
     }
-
-.ht_clone_top.handsontable { box-shadow: 0 2px 6px rgba(0,0,0,.06); }
-.badge {
-  display:inline-block; padding:2px 6px; border-radius:10px; font-size:.78rem;
-  line-height:1.2; font-weight:600;
-}
-.badge.overdue { background:#ffe3e3; color:#a61b1b; }
-.badge.today   { background:#fff4e6; color:#d9480f; }
-.badge.soon    { background:#e6fcf5; color:#087f5b; }
-
-
   </style>
 </head>
 <body>
-
-<nav class="nav_v1_header">
+  <nav class="nav_v1_header">
     <div class="nav_v1_header_wrapper">
-        <div class="nav_v1_header_links">
-          <a href="/verified" class="nav_v1_header_link">Home</a>
-            <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
-            <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
-            <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
-            <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
-        </div>
-        <a href="/logout" class="nav_v1_header_logout">Logout</a>
+      <div class="nav_v1_header_links">
+        <a href="/verified" class="nav_v1_header_link">Home</a>
+        <a href="/hazmat_shipping" class="nav_v1_header_link">Hazmat Shipping</a>
+        <a href="/hazmat_manager" class="nav_v1_header_link">Hazmat Manager</a>
+        <a href="/search-page" class="nav_v1_header_link">Search Orders</a>
+        <a href="/website-cs" class="nav_v1_header_link">Website CS</a>
+      </div>
+      <a href="/logout" class="nav_v1_header_logout">Logout</a>
     </div>
-</nav>
-  <h1>Hazmat ShipStation Orders</h1>
-  <div class="config">
-    <label>Sender Address:</label>
-    <select id="addressSelect">
-      <option value="williamstown">Williamstown, NJ (Default)</option>
-      <option value="colorado">Englewood, CO</option>
-      <option value="florida">Jacksonville, FL</option>
-    </select>
-  </div>
+  </nav>
 
-  <div id="hot-container"></div>
-  <div id="selected-count" style="margin-top:8px; font-size:0.9rem; color:#495057;">
-  0 rows selected
-</div>
-  <button id="export-btn">Export FedEx CSV</button>
+  <main>
+    <h1 style="margin: 10px 0 6px;">Hazmat ShipStation Orders</h1>
 
-  <!-- moment.js for timestamp -->
+    <!-- Sender address -->
+    <div class="group" style="margin: 6px 0 2px;">
+      <label class="small">Sender Address:</label>
+      <select id="addressSelect">
+        <option value="williamstown">Williamstown, NJ (Default)</option>
+        <option value="colorado">Englewood, CO</option>
+        <option value="florida">Jacksonville, FL</option>
+      </select>
+      <span id="selected-count" class="muted">0 rows selected</span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="group">
+          <label class="small">Quick Filter:</label>
+          <div class="chips" id="warehouseChips">
+            <div class="chip active" data-warehouse="all">All</div>
+            <div class="chip" data-warehouse="jersey">NJ</div>
+            <div class="chip" data-warehouse="colorado">CO</div>
+            <div class="chip" data-warehouse="florida">FL</div>
+          </div>
+        </div>
+        <div class="group">
+          <label class="small">Search:</label>
+          <input id="globalSearch" type="text" placeholder="Order #, customer, state, item…" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="selectVisibleBtn" title="Toggle select all visible rows">Select All Visible</button>
+        <button class="btn btn-primary" id="export-btn">Export FedEx CSV</button>
+      </div>
+    </div>
+
+    <div id="hot-container"></div>
+
+    <div class="footer">
+      <div>Tip: Shift-click to select a range. Ctrl/⌘-click to toggle rows. Sorting & filtering won’t break selection.</div>
+      <div id="stats" class="muted"></div>
+    </div>
+  </main>
+
+  <!-- deps -->
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
-  <!-- Handsontable JS -->
-  <script 
-    src="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.js">
-  </script>
-  <script>
-    // === CONFIG ===
-  const tagId = 30829;
-  const warehouseMap = {
-    248943: 'jersey',
-    248944: 'colorado',
-    256346: 'florida' // NEW
-  };
+  <script src="https://cdn.jsdelivr.net/npm/handsontable@11.1.0/dist/handsontable.full.min.js"></script>
 
-    // Address configurations
+  <script>
+    // === CONFIG (unchanged back-end expectations) ===
+    const tagId = 30829;
+    const warehouseMap = {
+      248943: 'jersey',
+      248944: 'colorado',
+      256346: 'florida', // NEW
+    };
+const chipToAddress = {
+  jersey:   'williamstown', // NJ chip picks Williamstown address
+  colorado: 'colorado',
+  florida:  'florida'
+};
+
+
     const addresses = {
       williamstown: {
         senderContactName: 'Tim Marker',
@@ -165,34 +179,36 @@
         senderState: 'FL'
       }
     };
-    // ==============
-    
-    let lastSelected = null;
-    let tableData = [];
-    let hot;
 
-    function getCurrentAddress() {
-      const selectedValue = document.getElementById('addressSelect').value;
-      return addresses[selectedValue];
-    }
-
+    // ===== helpers =====
+    const getCurrentAddress = () => addresses[document.getElementById('addressSelect').value];
     function parsePhoneNumber(phoneRaw) {
       if (!phoneRaw) return { number: '', extension: '' };
-      
-      // Check for extension first
       const extMatch = phoneRaw.match(/(.+?)\s*(?:ext\.?|extension|x)\s*(\d+)/i);
       if (extMatch) {
         const basePhone = extMatch[1];
         const extension = extMatch[2];
         const cleanPhone = basePhone.replace(/\D/g, '').replace(/^1/, '');
-        return { number: cleanPhone, extension: extension };
+        return { number: cleanPhone, extension };
       }
-      
-      // No extension found, just clean the number
-      const cleanPhone = phoneRaw.replace(/\D/g, '').replace(/^1/, '');
-      return { number: cleanPhone, extension: '' };
+      return { number: phoneRaw.replace(/\D/g, '').replace(/^1/, ''), extension: '' };
+    }
+    function daysUntil(dateStr) {
+      if (!dateStr) return null;
+      const d = new Date(dateStr);
+      const msDay = 86400000;
+      const todayMid = new Date(); todayMid.setHours(0,0,0,0);
+      const dueMid = new Date(d); dueMid.setHours(0,0,0,0);
+      return Math.round((dueMid - todayMid) / msDay);
+    }
+    function badgeForDays(days) {
+      if (!Number.isInteger(days)) return '';
+      if (days < 0)  return `<span class="badge overdue">${Math.abs(days)}d overdue</span>`;
+      if (days === 0) return `<span class="badge today">due today</span>`;
+      return `<span class="badge soon">due in ${days}d</span>`;
     }
 
+    // ===== CSV builder (unchanged) =====
     function convertOrdersToFedExCSV(orders) {
       const headers = [
         "serviceType","shipmentType",
@@ -207,7 +223,7 @@
         "length","width","height",
         "packageType","currencyType","reference"
       ];
-      headers.push("poNumber", "invoiceNumber")
+      headers.push("poNumber", "invoiceNumber");
       let csv = headers.join(",") + "\n";
 
       const senderContactNum = '6096667263';
@@ -224,7 +240,6 @@
         const s = o.shipTo;
         const weightLbs = Math.ceil(o.weight.value / 16);
         const phoneInfo = parsePhoneNumber(s.phone);
-
         const row = [
           o.serviceCode.toUpperCase(),
           shipmentType,
@@ -265,152 +280,309 @@
       return csv;
     }
 
-async function loadOrders() {
-  const res = await fetch(`/hazmat/orders?tagId=${tagId}`, {
-    credentials: 'same-origin'  // so your login cookie is sent
-  });
-  if (!res.ok) {
-    console.error('Fetch error', res.status, await res.text());
-    return;
-  }
-    const orders = await res.json();
+    // ===== app state =====
+    let tableData = [];
+    let hot = null;
+    let lastAnchorPhysical = null;
 
-    const now = Date.now();
+    // ===== load + map orders (backend unchanged) =====
+    async function loadOrders() {
+      const res = await fetch(`/hazmat/orders?tagId=${tagId}`, { credentials: 'same-origin' });
+      if (!res.ok) { console.error('Fetch error', res.status, await res.text()); return; }
+      const orders = await res.json();
+      const now = Date.now();
 
-    // helper to decide the reference value
-    function getAutoReference(itemSkus) {
-      // look for any SKU that includes "CHAMPION"
-      if (itemSkus.some(sku => /champion/i.test(sku))) {
-        return 'CHAMPION';
+      function getAutoReference(itemSkus) {
+        if (itemSkus.some(sku => /champion/i.test(sku))) return 'CHAMPION';
+        if (itemSkus.some(sku => /refresh/i.test(sku)))  return 'REFRESH';
+        if (itemSkus.includes('71266'))                  return 'GLB AQUA SILK';
+        return '';
       }
-      // then look for any SKU that includes "REFRESH"
-      if (itemSkus.some(sku => /refresh/i.test(sku))) {
-        return 'REFRESH';
-      }
-      // then the exact code 71266
-      if (itemSkus.includes('71266')) {
-        return 'GLB AQUA SILK';
-      }
-      return '';
+
+      tableData = orders.map(o => {
+        const skus = o.items.map(i => i.sku);
+        const shipBy = o.shipByDate || o.requestedShippingService?.shipByDate || o.orderDate || '';
+        return {
+          select: false,
+          orderNumber: o.orderNumber,
+          warehouse: warehouseMap[o.advancedOptions.warehouseId] || o.advancedOptions.warehouseId,
+          shipmentAge: Math.ceil((now - new Date(o.createDate).getTime()) / 3600000),
+          items: skus.join(', '),
+          state: o.shipTo.state,
+          customer: o.shipTo.name,
+          reference: getAutoReference(skus),
+          shipBy,               // NEW (for UI)
+          shipByDays: daysUntil(shipBy), // NEW (for badge)
+          raw: o
+        };
+      });
+
+      // backend side-effect (unchanged)
+      await Promise.all(orders.map(o => {
+        return fetch(`/search/hazmat/update_db?orderId=${encodeURIComponent(o.orderId)}&warehouseId=${encodeURIComponent(o.advancedOptions.warehouseId)}`, { credentials: 'same-origin' })
+          .then(r => { if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`); return r.json(); })
+          .then(json => console.log('✅ updated', json))
+          .catch(err => console.error('❌ update failed for', o.orderId, err));
+      }));
+
+      initTable();
+      applyWarehouseChip('all'); // default
+      updateStats();
     }
 
-    console.log(orders[0])
+    // ===== table init (robust selection + filters/sort + ship-by badges) =====
+    function initTable() {
+      const container = document.getElementById('hot-container');
+      if (hot) { hot.destroy(); hot = null; }
 
-    tableData = orders.map(o => {
-      // build your items string, but also extract the raw SKUs array
-      const skus = o.items.map(i => i.sku);
-      return {
-        select: false,
-        orderNumber: o.orderNumber,
-        warehouse: warehouseMap[o.advancedOptions.warehouseId] || o.advancedOptions.warehouseId,
-        shipmentAge: Math.ceil((now - new Date(o.createDate).getTime()) / (1000*60*60)),
-        items: skus.join(', '),
-        state: o.shipTo.state,
-        customer: o.shipTo.name,
-        // ← auto-populate based on our rules
-        reference: getAutoReference(skus),
-        raw: o
-      };
-    });
+      hot = new Handsontable(container, {
+        data: tableData,
+        licenseKey: 'non-commercial-and-evaluation',
+        width: '100%',
+        height: 520,
+        stretchH: 'all',
+        rowHeaders: true,
 
-      await Promise.all( orders.map(o => {
-    return fetch(
-      `/search/hazmat/update_db` +
-      `?orderId=${encodeURIComponent(o.orderId)}` +
-      `&warehouseId=${encodeURIComponent(o.advancedOptions.warehouseId)}`,
-      { credentials: 'same-origin' }
-    )
-    .then(r => {
-      if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`);
-      return r.json();
-    })
-    .then(json => console.log('✅ updated', json))
-    .catch(err => console.error('❌ update failed for', o.orderId, err));
-  }) );
+        colHeaders(col) {
+          const headers = [
+            '<input type="checkbox" id="hdr-select-all" title="Select all visible"/>',
+            'Order #','Warehouse','Ship-By','Items','State','Customer','Reference','Shipment Age (h)'
+          ];
+          return headers[col];
+        },
 
-    hot = new Handsontable(document.getElementById('hot-container'), {
-      data: tableData,
-      colHeaders: ['Select','Order Number','Warehouse','Shipment Age','Items','State','Customer','Reference'],
-      columns: [
-        { data: 'select', type: 'checkbox', width: 60 },
-        { 
-          data: 'orderNumber', 
-          width: 150,
-          renderer: function(instance, td, row, col, prop, value, cellProperties) {
-            td.innerHTML = `<a href="https://sellercentral.amazon.com/messaging/contact?orderID=${value}&marketplaceID=ATVPDKIKX0DER" target="_blank">${value}</a>`;
-            return td;
+        columns: [
+          { data: 'select', type: 'checkbox', width: 80 }, // 0
+          { // 1 - order link
+            data: 'orderNumber', width: 140,
+            renderer(instance, td, row, col, prop, value) {
+              td.innerHTML = `<a href="https://sellercentral.amazon.com/messaging/contact?orderID=${value}&marketplaceID=ATVPDKIKX0DER" target="_blank" rel="noopener">${value}</a>`;
+              td.style.whiteSpace = 'nowrap';
+              return td;
+            }
+          },
+          { data: 'warehouse', width: 90 },
+          { // 8 - ship-by pretty
+            data: 'shipBy', width: 150,
+            renderer(instance, td, row) {
+              const p = instance.toPhysicalRow(row);
+              const src = p != null ? instance.getSourceDataAtRow(p) : null;
+              const value = src?.shipBy || '';
+              const days  = src?.shipByDays;
+              if (!value) { td.textContent = ''; return td; }
+              const d = new Date(value);
+              const pretty = isNaN(d) ? value : d.toLocaleDateString();
+              td.innerHTML = `${badgeForDays(days)} <span style="opacity:.8">${pretty}</span>`;
+              return td;
+            }
+          },                // 2
+          { data: 'items', width: 250 },                   // 4
+          { data: 'state', width: 60 },                    // 5
+          { data: 'customer', width: 170 },                // 6
+          { data: 'reference', editor: 'text', width: 130 }, // 7
+          { data: 'shipmentAge', type: 'numeric', width: 120 }, // 3
+        ],
+
+        // QOL features
+        dropdownMenu: true,
+        filters: true,
+        columnSorting: { initialConfig: [{ column: 8, sortOrder: 'asc' }] },
+        multiColumnSorting: true,
+        manualColumnResize: true,
+        outsideClickDeselects: false,
+        search: true,
+
+        // Robust selection: only mutate selection when clicking the checkbox column
+        beforeOnCellMouseDown(event, coords) {
+          if (coords.row < 0) return;
+          if (coords.col !== 0) return; // only handle clicks on checkbox column
+
+          const vRow = coords.row;
+          const pRow = hot.toPhysicalRow(vRow);
+          if (pRow == null) return;
+
+          // Shift range select
+          if (event.shiftKey && lastAnchorPhysical != null) {
+            const anchorV = hot.toVisualRow(lastAnchorPhysical);
+            if (anchorV != null) {
+              const [startV, endV] = [anchorV, vRow].sort((a,b)=>a-b);
+              for (let v = startV; v <= endV; v++) {
+                const p = hot.toPhysicalRow(v);
+                if (p != null) tableData[p].select = true;
+              }
+            }
+            hot.render(); updateSelectedCount(); event.stopImmediatePropagation(); event.preventDefault(); return false;
+          }
+
+          // Ctrl/Meta toggles only clicked row
+          if (event.ctrlKey || event.metaKey) {
+            tableData[pRow].select = !tableData[pRow].select;
+            lastAnchorPhysical = pRow;
+            hot.render(); updateSelectedCount(); event.stopImmediatePropagation(); event.preventDefault(); return false;
+          }
+
+          // Plain click = single select
+          tableData.forEach(r => r.select = false);
+          tableData[pRow].select = true;
+          lastAnchorPhysical = pRow;
+          hot.render(); updateSelectedCount(); event.stopImmediatePropagation(); event.preventDefault(); return false;
+        },
+
+        afterGetColHeader(col, TH) {
+          if (col !== 0) return;
+          const box = TH.querySelector('#hdr-select-all');
+          if (box && !box.dataset.bound) {
+            box.dataset.bound = '1';
+            box.addEventListener('click', () => {
+              const checked = box.checked;
+              // iterate visible rows only
+              const count = hot.countRows();
+              for (let v = 0; v < count; v++) {
+                const p = hot.toPhysicalRow(v);
+                if (p != null) tableData[p].select = checked;
+              }
+              hot.render(); updateSelectedCount();
+            });
           }
         },
-        { data: 'warehouse' },
-        { data: 'shipmentAge', type: 'numeric', width: 100 },
-        { data: 'items', width: 300 },
-        { data: 'state' },
-        { data: 'customer', width: 150 },
-        { data: 'reference', editor: 'text', width: 120 }
-      ],
-      width: '100%',
-      height: 500,
-      stretchH: 'all',
-      rowHeaders: true,
-      licenseKey: 'non-commercial-and-evaluation',
-      dropdownMenu: true,
-      columnSorting: true,
-afterOnCellMouseDown(event, coords) {
-  if (coords.row < 0) return;
-  
-  // Convert visual row to physical (data array) row
-  const physicalRow = hot.toPhysicalRow(coords.row);
-  if (physicalRow === null || physicalRow === undefined) return;
-  
-  if (event.shiftKey && lastSelected !== null) {
-    const lastPhysical = hot.toPhysicalRow(lastSelected);
-    if (lastPhysical !== null) {
-      const [start, end] = [lastPhysical, physicalRow].sort((a,b)=>a-b);
-      for (let i = start; i <= end; i++) tableData[i].select = true;
+
+        afterColumnSort() { fixAnchor(); },
+        afterFilter() { fixAnchor(); },
+      });
+
+      // global search input -> Handsontable search plugin (highlight + quick filter via filters)
+      const searchInput = document.getElementById('globalSearch');
+      const searchPlugin = hot.getPlugin('search');
+      const filtersPlugin = hot.getPlugin('filters');
+
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim();
+        // highlight
+        searchPlugin.query(q);
+        // quick filter across a few columns (order #, customer, state, items)
+        filtersPlugin.clearConditions();
+        if (q) {
+          filtersPlugin.addCondition(1, 'contains', [q]); // order #
+          filtersPlugin.addCondition(4, 'contains', [q], 'disjunction'); // items
+          filtersPlugin.addCondition(5, 'contains', [q], 'disjunction'); // state
+          filtersPlugin.addCondition(6, 'contains', [q], 'disjunction'); // customer
+        }
+        filtersPlugin.filter();
+        updateSelectedCount();
+        updateStats();
+      });
+
+      // Select all visible button (toggles: if any unchecked => select all, else clear all)
+      document.getElementById('selectVisibleBtn').addEventListener('click', () => {
+        const visibleRows = Array.from({length: hot.countRows()}, (_, v) => hot.toPhysicalRow(v)).filter(p => p != null);
+        const anyUnchecked = visibleRows.some(p => !tableData[p].select);
+        visibleRows.forEach(p => tableData[p].select = anyUnchecked);
+        hot.render(); updateSelectedCount();
+      });
     }
-  } else if (event.ctrlKey || event.metaKey) {
-    tableData[physicalRow].select = !tableData[physicalRow].select;
-    lastSelected = coords.row; // Keep visual row for shift+click reference
-  } else {
-    tableData.forEach(d=>d.select=false);
-    tableData[physicalRow].select = true;
-    lastSelected = coords.row; // Keep visual row for shift+click reference
-  }
-  hot.render();
 
-  document.getElementById('selected-count').textContent = 
-  tableData.filter(r => r.select).length + " rows selected";
-
-
-  
-  event.preventDefault();
-}
-    });
-  }
-
-    document.getElementById('export-btn').addEventListener('click', () => {
-      if (!hot) return;
-      const selectedOrders = tableData
-        .filter(row => row.select)
-        .map(row => {
-          row.raw.reference = row.reference;
-          return row.raw;
-        });
-
-      if (!selectedOrders.length) {
-        alert('No rows selected!');
-        return;
+    function fixAnchor() {
+      if (lastAnchorPhysical != null && hot.toVisualRow(lastAnchorPhysical) == null) {
+        lastAnchorPhysical = null;
       }
+      updateSelectedCount();
+      updateStats();
+    }
 
-      const csvData = convertOrdersToFedExCSV(selectedOrders);
-      const rn = moment().format("MM-DD-YYYY_HH_mm");
-      const blob = new Blob([csvData], { type: 'text/csv' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `fedex_batch_${rn}.csv`;
-      link.click();
+    function updateSelectedCount() {
+      document.getElementById('selected-count').textContent =
+        tableData.filter(r => r.select).length + ' rows selected';
+    }
+
+    function updateStats() {
+      const total = hot ? hot.countRows() : 0;
+      const overdueVisible = [];
+      for (let v = 0; v < total; v++) {
+        const p = hot.toPhysicalRow(v);
+        if (p == null) continue;
+        const d = tableData[p].shipByDays;
+        if (Number.isInteger(d) && d < 0) overdueVisible.push(p);
+      }
+      document.getElementById('stats').textContent =
+        `${total} visible • ${overdueVisible.length} overdue`;
+    }
+
+    // ===== warehouse chips → filters plugin =====
+function applyWarehouseChip(value) {
+  const filters = hot.getPlugin('filters');
+  const q = document.getElementById('globalSearch').value.trim();
+
+  // 1) Apply filters (warehouse + current text search)
+  filters.clearConditions();
+  if (value !== 'all') {
+    filters.addCondition(2, 'eq', [value]); // warehouse column index 2
+  }
+  if (q) {
+    filters.addCondition(1, 'contains', [q], 'disjunction'); // order #
+    filters.addCondition(4, 'contains', [q], 'disjunction'); // items
+    filters.addCondition(5, 'contains', [q], 'disjunction'); // state
+    filters.addCondition(6, 'contains', [q], 'disjunction'); // customer
+  }
+  filters.filter();
+
+  // 2) Sync the sender address dropdown when chip is NJ/CO/FL
+  const addrSel = document.getElementById('addressSelect');
+  if (value in chipToAddress) {
+    addrSel.value = chipToAddress[value];
+    // (optional) if you have any on-change side effects, trigger them:
+    // addrSel.dispatchEvent(new Event('change'));
+  }
+
+  // 3) Clear all row selections + header checkbox
+  tableData.forEach(r => r.select = false);
+  const hdr = document.querySelector('#hdr-select-all');
+  if (hdr) hdr.checked = false;
+
+  // 4) Update chip UI + table
+  document.querySelectorAll('#warehouseChips .chip').forEach(el => {
+    el.classList.toggle('active', el.dataset.warehouse === value);
+  });
+  hot.render();
+  updateSelectedCount();
+  updateStats();
+}
+
+
+    document.getElementById('warehouseChips').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      applyWarehouseChip(chip.dataset.warehouse);
     });
 
+    // ===== export (unchanged path/format) =====
+document.getElementById('export-btn').addEventListener('click', () => {
+  if (!hot) return;
+
+  const selectedOrders = tableData
+    .filter(row => row.select)
+    .map(row => {
+      row.raw.reference = row.reference; // keep existing behavior
+      return row.raw;
+    });
+
+  if (!selectedOrders.length) {
+    alert('No rows selected!');
+    return;
+  }
+
+  const csvData = convertOrdersToFedExCSV(selectedOrders);
+  const rn = moment().format("MM-DD-YYYY_HH_mm");
+  const location_selected = document.getElementById('addressSelect').value;
+
+  const blob = new Blob([csvData], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${location_selected}_fedex_batch_${rn}.csv`; // ← here
+  link.click();
+});
+
+
+    // boot
     loadOrders().catch(console.error);
   </script>
 </body>

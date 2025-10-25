@@ -1843,7 +1843,11 @@ def logout_v2():
     session.pop("user", None)
     return redirect(url_for("unverified"))  # or wherever
     
-    
+@app.route('/old_hazmat_shipping')
+@login_required_custom
+def old_hazmat_shipping():
+    return render_template('old_hazmat_shipping.html')
+
 @app.route('/hazmat_shipping')
 @login_required_custom
 def hazmat_shipping():
