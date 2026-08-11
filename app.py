@@ -110,6 +110,9 @@ SHIPSTATION_URL = "https://api.shipstation.com/v2/labels"
 LABEL_PRINTER_ID = int(os.getenv('LABEL_PRINTER_ID', 74471601))
 STICKER_PRINTER_ID = int(os.getenv('STICKER_PRINTER_ID', 74622079))
 
+# Google Workspace domain allowed to sign in via OAuth
+ALLOWED_EMAIL_DOMAIN = os.getenv('ALLOWED_EMAIL_DOMAIN', 'ezpools.com').lower()
+
 # Flask Configuration
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
@@ -1446,7 +1449,14 @@ def sign_pdf():
         
     except Exception as err:
         return jsonify({"error": f"PDF signing failed: {str(err)}"}), 500
-    
+
+# Standalone PDF signer page — Google login (@ezpools.com only), no passcode
+@app.route('/sign')
+@login_required_custom
+def sign_page():
+    """Dedicated PDF signer for warehouse staff, gated by Google OAuth."""
+    return render_template('sign.html', user_email=current_user.email)
+
 #shipstation v1 what's this
 @app.route('/ops/whats-this')
 def whats_this_interface():
@@ -1812,7 +1822,9 @@ def login():
     redirect_uri = url_for("authorize",
                            _external=True,
                            _scheme="https")
-    return google.authorize_redirect(redirect_uri)
+    # `hd` pre-selects the company Workspace on Google's account chooser.
+    # It is only a UX hint — real enforcement happens server-side in /authorize.
+    return google.authorize_redirect(redirect_uri, hd=ALLOWED_EMAIL_DOMAIN)
 
 
 @app.route("/authorize")
@@ -1822,8 +1834,13 @@ def authorize():
         session['google_token'] = token
         userinfo = google.userinfo()
 
-        if not userinfo or "sub" not in userinfo or "email" not in userinfo:
+        email = (userinfo.get("email") or "").lower() if userinfo else ""
+        if not userinfo or "sub" not in userinfo or not email:
             return "Authentication failed", 400
+
+        # Restrict access to verified accounts on the company domain.
+        if not userinfo.get("email_verified", False) or not email.endswith("@" + ALLOWED_EMAIL_DOMAIN):
+            return f"Access restricted to @{ALLOWED_EMAIL_DOMAIN} accounts. You signed in as {email}.", 403
 
         # Save user ID + email
         session["user"] = {"sub": userinfo["sub"], "email": userinfo["email"]}
