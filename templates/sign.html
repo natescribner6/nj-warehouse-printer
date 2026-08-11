@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PDF Signer</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0; padding: 20px; min-height: 100vh;
+        }
+        .card {
+            background: #fff; max-width: 620px; margin: 0 auto;
+            border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            padding: 32px;
+        }
+        .topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px; color: #666; margin-bottom: 24px;
+        }
+        .topbar a { color: #667eea; text-decoration: none; font-weight: 600; }
+        h1 { color: #333; margin: 0 0 8px; font-size: 26px; text-align: center; }
+        .subtitle { color: #666; font-style: italic; text-align: center; margin-bottom: 24px; }
+        .template-switch {
+            display: flex; justify-content: center; align-items: center;
+            gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 10px;
+            border: 1px solid #e0e0e0; margin-bottom: 8px;
+        }
+        .template-switch span { font-weight: 500; color: #333; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; inset: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 26px; width: 26px;
+            left: 4px; bottom: 4px; background: #fff; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #667eea; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .hint { text-align: center; font-size: 13px; color: #888; margin-bottom: 24px; }
+        #dropZone {
+            border: 2px dashed #ccc; border-radius: 10px; padding: 40px;
+            text-align: center; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease;
+        }
+        #dropZone p { margin: 0; font-size: 18px; color: #666; }
+        #pdfPreview { display: none; margin-top: 24px; text-align: center; }
+        #pdfPreview.show { display: block; }
+        #selectedFileName { font-weight: 500; color: #667eea; margin: 8px 0 20px; }
+        .sign-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; border: none; padding: 14px 32px; border-radius: 8px;
+            font-size: 16px; cursor: pointer; width: 100%; transition: transform 0.2s;
+        }
+        .sign-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .sign-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 8px; text-align: center; display: none; }
+        .msg.show { display: block; }
+        .error-message { background: #fdecea; color: #c0392b; }
+        .success-message { background: #eafaf1; color: #27ae60; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="topbar">
+            <span>Signed in as <strong>{{ user_email }}</strong></span>
+            <a href="/logout">Log out</a>
+        </div>
+
+        <h1>✍️ PDF Document Signer</h1>
+        <p class="subtitle">Automatically adds the signature to the OP-900 laser file (red sticker paper for hazmats)</p>
+
+        <div class="template-switch">
+            <span>OP900 (laser)</span>
+            <label class="switch">
+                <input type="checkbox" id="templateToggle">
+                <span class="slider"></span>
+            </label>
+            <span>OP950 (Cert) — Template B</span>
+        </div>
+        <p class="hint">Template A: standard positions&nbsp;|&nbsp;Template B: alternative positions</p>
+
+        <div id="dropZone">
+            <p>📄 Drag &amp; drop a PDF here or click to select</p>
+            <input type="file" id="pdfFileInput" accept=".pdf" style="display:none;">
+        </div>
+
+        <div id="pdfPreview">
+            <h4 style="color:#333; margin-bottom:6px;">Selected PDF:</h4>
+            <p id="selectedFileName"></p>
+            <button class="sign-btn" id="signPdfBtn" onclick="signAndDownloadPdf()">✍️ Sign &amp; Download PDF</button>
+        </div>
+
+        <div class="msg error-message" id="errorMessage"></div>
+        <div class="msg success-message" id="successMessage"></div>
+    </div>
+
+    <script>
+        let selectedTemplate = 'A';
+        let selectedPdfFile = null;
+
+        document.addEventListener('DOMContentLoaded', setupPdfSigner);
+
+        function showError(text) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = text; el.classList.add('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+        function showSuccess(text) {
+            const el = document.getElementById('successMessage');
+            el.textContent = text; el.classList.add('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        function setupPdfSigner() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('pdfFileInput');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#667eea';
+                dropZone.style.backgroundColor = '#e3f2fd';
+            });
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = '#f8f9fa';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = '#f8f9fa';
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type === 'application/pdf') {
+                    handlePdfSelection(files[0]);
+                } else {
+                    showError('Please select a PDF file');
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handlePdfSelection(e.target.files[0]);
+            });
+
+            document.getElementById('templateToggle').addEventListener('change', (e) => {
+                selectedTemplate = e.target.checked ? 'B' : 'A';
+            });
+        }
+
+        function handlePdfSelection(file) {
+            selectedPdfFile = file;
+            document.getElementById('selectedFileName').textContent = file.name;
+            document.getElementById('pdfPreview').classList.add('show');
+            showSuccess(`PDF selected: ${file.name}`);
+        }
+
+        async function signAndDownloadPdf() {
+            if (!selectedPdfFile) { showError('Please select a PDF file first'); return; }
+
+            const signBtn = document.getElementById('signPdfBtn');
+            const originalText = signBtn.innerHTML;
+
+            try {
+                signBtn.disabled = true;
+                signBtn.innerHTML = '🔄 Signing PDF...';
+
+                const formData = new FormData();
+                formData.append('file', selectedPdfFile);
+                formData.append('template', selectedTemplate);
+
+                const response = await fetch('/api/sign-pdf', { method: 'POST', body: formData });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `signed_${selectedPdfFile.name}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+
+                    showSuccess(`✅ PDF signed with Template ${selectedTemplate} and downloaded successfully!`);
+                    signBtn.innerHTML = '✅ Signed!';
+                    setTimeout(() => { signBtn.disabled = false; signBtn.innerHTML = originalText; }, 3000);
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    showError(`❌ ${error.error || 'Failed to sign PDF'}`);
+                    signBtn.disabled = false;
+                    signBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                showError('❌ Sign failed: ' + error.message);
+                signBtn.disabled = false;
+                signBtn.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>
